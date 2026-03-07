@@ -8,7 +8,6 @@ Onyx is a daily priority engine. It ranks what must get done today and this week
 - TypeScript
 - Tailwind CSS
 - Firebase Auth
-- Firebase Admin SDK
 - Cloud Firestore
 
 ## What v1 does
@@ -42,7 +41,7 @@ cp .env.example .env.local
 openssl rand -base64 32
 ```
 
-4. Fill in Firebase Admin and Firebase web app credentials in `.env.local`.
+4. Fill in your Firebase service account and Firebase web app credentials in `.env.local`.
 
 5. Start the app:
 
@@ -73,7 +72,7 @@ npm run dev
    - `FIREBASE_MESSAGING_SENDER_ID`
    - `FIREBASE_APP_ID`
    - `FIREBASE_MEASUREMENT_ID` if present
-6. In `Project settings -> Service accounts`, generate a new private key for the Firebase Admin SDK.
+6. In `Project settings -> Service accounts`, generate a new private key for a Firebase service account.
 7. Copy the service account values into `.env.local`:
    - `FIREBASE_PROJECT_ID`
    - `FIREBASE_CLIENT_EMAIL`
@@ -91,7 +90,7 @@ openssl rand -base64 32
 
 1. In `Build -> Firestore Database`, create a Firestore database in production or development mode.
 2. Pick a region close to your VPS or expected usage.
-3. The app uses the Firebase Admin SDK server-side, so local development reads and writes through the service account in `.env.local`.
+3. The app uses the Firebase service account server-side, so local development reads and writes through the credentials in `.env.local`.
 4. Initial data is created lazily by the app when you save settings, integrations, or planner output.
 5. Current document layout:
    - `users/{userId}`
@@ -110,7 +109,7 @@ openssl rand -base64 32
 
 1. The browser login form signs in with Firebase client SDK email/password auth.
 2. The browser sends the Firebase ID token to `/api/auth/session`.
-3. The server verifies it with Firebase Admin and creates an HTTP-only session cookie.
+3. The server verifies it and creates an HTTP-only session cookie.
 4. Admin routes and APIs verify that session cookie server-side.
 5. GPT-facing founder endpoints can also authenticate with a dedicated `X-Onyx-API-Key` token created from `/gpt-setup`.
 
@@ -179,7 +178,7 @@ Hook: I learn faster when I publish the open question before I have the polished
 
 ## Firestore usage in Onyx
 
-1. Server routes and planner services use Firebase Admin only.
+1. Server routes and planner services use the server-side Firebase service account only.
 2. The browser does not talk to Firestore directly.
 3. Integration secrets are encrypted on the server before they are written to Firestore.
 
@@ -200,19 +199,19 @@ Hook: I learn faster when I publish the open question before I have the polished
 - Set `APP_URL` to the external origin.
 - Use a process manager such as `systemd`, `pm2`, or Docker.
 
-## Cloudflare Pages deployment
+## Vercel deployment
 
-Onyx is configured to deploy to Cloudflare through OpenNext and Wrangler. The Cloudflare build path is:
+Onyx deploys to Vercel as a standard Next.js app.
 
-- `npm run deploy`
+Recommended Vercel project setup:
 
-Recommended project setup:
-
+- Framework preset: `Next.js`
 - Root directory: `/`
 - Build command: `npm run build`
-- Deploy command: `npm run deploy`
+- Output directory: leave blank
+- Install command: `npm ci`
 
-Required Cloudflare runtime secrets match `.env.example`:
+Required Vercel environment variables match `.env.example`:
 
 - `APP_URL`
 - `FIREBASE_PROJECT_ID`
@@ -230,18 +229,6 @@ Required Cloudflare runtime secrets match `.env.example`:
 - `GOOGLE_CLOUD_KMS_LOCATION`
 - `GOOGLE_CLOUD_KMS_KEY_RING`
 - `GOOGLE_CLOUD_KMS_CRYPTO_KEY`
-
-To push secrets from `.env.local` with the CLI:
-
-```bash
-npm run cf:secrets:push
-```
-
-To use a different env file:
-
-```bash
-CF_ENV_FILE=.env.production npm run cf:secrets:push
-```
 
 ## Open-source/plugin notes
 
