@@ -15,13 +15,9 @@ export async function getIntegrationAdapter(provider: IntegrationProvider): Prom
       const imported = await import("@/lib/integrations/google-sheets/adapter");
       return new imported.GoogleSheetsAdapter();
     }
-    case "google-calendar": {
-      const imported = await import("@/lib/integrations/google-calendar/adapter");
-      return new imported.GoogleCalendarAdapter();
-    }
-    case "apple-calendar": {
-      const imported = await import("@/lib/integrations/apple-calendar/adapter");
-      return new imported.AppleCalendarAdapter();
+    case "calendar": {
+      const imported = await import("@/lib/integrations/calendar/adapter");
+      return new imported.CalendarAdapter();
     }
     default:
       throw new Error(`Unknown integration provider: ${provider}`);

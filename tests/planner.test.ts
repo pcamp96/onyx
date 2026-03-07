@@ -129,7 +129,7 @@ describe("today planner", () => {
       [
         {
           id: "event-1",
-          source: "google-calendar",
+          source: "calendar",
           sourceId: "event-1",
           title: "Team standup",
           start: "2026-03-06T15:00:00.000Z",
@@ -140,7 +140,7 @@ describe("today planner", () => {
         },
         {
           id: "event-2",
-          source: "google-calendar",
+          source: "calendar",
           sourceId: "event-2",
           title: "Patrick dentist appointment",
           start: "2026-03-06T18:00:00.000Z",

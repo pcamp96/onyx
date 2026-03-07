@@ -18,6 +18,10 @@ export async function POST(request: NextRequest, context: { params: Promise<{ pr
   }
 
   const provider = (await context.params).provider as IntegrationProvider;
+  if (provider === "calendar") {
+    return badRequest("Calendar ICS feeds do not use stored secrets");
+  }
+
   const encrypted = await encryptIntegrationSecret(provider, body.secret, session.uid);
   await secretsRepository.save(session.uid, provider, {
     ...encrypted,

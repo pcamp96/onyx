@@ -417,21 +417,13 @@ function IntegrationCard({
             <div className="space-y-4">
               <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_18rem]">
                 <div className="rounded-lg border border-stone-200 bg-white px-4 py-4">
-                  {integration.provider === "apple-calendar" ? (
+                  {integration.provider === "calendar" ? (
                     <MultiValueField
-                      label="Apple calendar feeds"
-                      hint="Add one ICS URL per calendar you want Onyx to read."
+                      label="Calendar ICS feeds"
+                      hint="Add one public ICS URL per calendar you want Onyx to read."
                       values={localConfig.icsUrls}
                       onChange={(values) => setLocalConfig((current) => ({ ...current, icsUrls: values }))}
-                      placeholder="https://calendar.icloud.com/..."
-                    />
-                  ) : integration.provider === "google-calendar" ? (
-                    <MultiValueField
-                      label="Google Calendar IDs"
-                      hint="Add one calendar ID per line item. Example: primary or a shared calendar email address."
-                      values={localConfig.calendarIds}
-                      onChange={(values) => setLocalConfig((current) => ({ ...current, calendarIds: values }))}
-                      placeholder="primary"
+                      placeholder="https://calendar.google.com/calendar/ical/.../public/basic.ics"
                     />
                   ) : integration.provider === "asana" ? (
                     <Field
@@ -456,37 +448,39 @@ function IntegrationCard({
                     />
                   )}
                 </div>
-                <div className="rounded-lg border border-stone-200 bg-white px-4 py-4">
-                  <div className="mb-3">
-                    <h3 className="text-sm font-semibold text-stone-900">Credentials</h3>
-                    <p className="mt-1 text-sm leading-5 text-stone-500">
-                      Stored secrets are encrypted. Pasting a new value replaces the current secret.
-                    </p>
-                  </div>
-                  <FormField
-                    label="Secret or token"
-                    hint="Paste a replacement value only when rotating or fixing credentials."
-                  >
-                    <Input
-                      type="password"
-                      value={secret}
-                      placeholder="Enter a replacement credential"
-                      onChange={(event) => setSecret(event.target.value)}
-                    />
-                  </FormField>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <Button
-                      variant="secondary"
-                      disabled={!secret || busy}
-                      onClick={() => {
-                        onSecretSave(secret);
-                        setSecret("");
-                      }}
+                {integration.provider === "calendar" ? null : (
+                  <div className="rounded-lg border border-stone-200 bg-white px-4 py-4">
+                    <div className="mb-3">
+                      <h3 className="text-sm font-semibold text-stone-900">Credentials</h3>
+                      <p className="mt-1 text-sm leading-5 text-stone-500">
+                        Stored secrets are encrypted. Pasting a new value replaces the current secret.
+                      </p>
+                    </div>
+                    <FormField
+                      label="Secret or token"
+                      hint="Paste a replacement value only when rotating or fixing credentials."
                     >
-                      Replace secret
-                    </Button>
+                      <Input
+                        type="password"
+                        value={secret}
+                        placeholder="Enter a replacement credential"
+                        onChange={(event) => setSecret(event.target.value)}
+                      />
+                    </FormField>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <Button
+                        variant="secondary"
+                        disabled={!secret || busy}
+                        onClick={() => {
+                          onSecretSave(secret);
+                          setSecret("");
+                        }}
+                      >
+                        Replace secret
+                      </Button>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
               <div className="flex justify-end">
                 <Button
@@ -494,13 +488,11 @@ function IntegrationCard({
                   onClick={() =>
                     onSave({
                       config:
-                        integration.provider === "google-calendar"
-                          ? { calendarIds: compactList(localConfig.calendarIds) }
-                          : integration.provider === "apple-calendar"
-                            ? { icsUrls: compactList(localConfig.icsUrls) }
-                            : integration.provider === "asana"
-                              ? { workspaceId: localConfig.workspaceId }
-                              : integration.provider === "todoist"
+                        integration.provider === "calendar"
+                          ? { icsUrls: compactList(localConfig.icsUrls) }
+                          : integration.provider === "asana"
+                            ? { workspaceId: localConfig.workspaceId }
+                            : integration.provider === "todoist"
                                 ? { projectId: localConfig.projectId }
                                 : localConfig,
                     })

@@ -7,8 +7,7 @@ export const PROVIDERS: IntegrationProvider[] = [
   "asana",
   "todoist",
   "google-sheets",
-  "google-calendar",
-  "apple-calendar",
+  "calendar",
 ];
 
 export const DEFAULT_AREA_WEIGHTS: Record<WorkArea, number> = {
@@ -40,6 +39,5 @@ export const PROVIDER_LABELS: Record<IntegrationProvider, string> = {
   asana: "Asana",
   todoist: "Todoist",
   "google-sheets": "Google Sheets",
-  "google-calendar": "Google Calendar",
-  "apple-calendar": "Apple Calendar",
+  calendar: "Calendar",
 };
