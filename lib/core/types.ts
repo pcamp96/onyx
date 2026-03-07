@@ -16,8 +16,6 @@ export interface UserProfile {
   id: string;
   email: string;
   displayName?: string;
-  role: "admin";
-  status: "active" | "disabled";
   createdAt: string;
   updatedAt: string;
   lastLoginAt?: string;
@@ -37,6 +35,7 @@ export interface PlannerSettings extends AuditFields {
 }
 
 export interface IntegrationRecord {
+  userId: string;
   provider: IntegrationProvider;
   enabled: boolean;
   status: "idle" | "connected" | "error" | "disabled";
@@ -52,6 +51,7 @@ export interface IntegrationRecord {
 }
 
 export interface EncryptedSecretRecord {
+  userId: string;
   provider: IntegrationProvider;
   ciphertext: string;
   iv: string;
@@ -61,6 +61,12 @@ export interface EncryptedSecretRecord {
   version: string;
   updatedAt: string;
   updatedBy: string;
+}
+
+export interface IntegrationConfigRecord extends AuditFields {
+  userId: string;
+  provider: IntegrationProvider;
+  values: Record<string, unknown>;
 }
 
 export interface GoogleSheetColumnMapping {
@@ -73,13 +79,10 @@ export interface GoogleSheetColumnMapping {
 }
 
 export interface GoogleSheetConfig {
-  userId: string;
   spreadsheetId: string;
   worksheetName: string;
   sourceUrl?: string;
   columnMapping: GoogleSheetColumnMapping;
-  updatedAt: string;
-  updatedBy: string;
 }
 
 export interface SponsorProject {
@@ -120,64 +123,75 @@ export interface PluginRegistryRecord {
 
 export interface NormalizedTask {
   id: string;
+  source: IntegrationProvider;
   sourceId: string;
-  provider: IntegrationProvider;
+  sourceUrl?: string;
   area: WorkArea;
   title: string;
   notes?: string;
   status: "open" | "in_progress" | "blocked" | "done";
-  dueAt?: string;
-  isOverdue: boolean;
+  dueDate?: string;
   priority?: number;
+  estimatedEffort?: number;
+  tags?: string[];
+  isOverdue: boolean;
+  isBlocked: boolean;
+  businessImpact?: number;
+  incomeImpact?: number;
+  createdAt?: string;
+  updatedAt?: string;
+  sponsorRisk?: boolean;
   projectName?: string;
   projectId?: string;
-  labels?: string[];
-  estimatedValue?: number;
-  incomeImpact?: number;
-  businessImpact?: number;
-  sponsorRisk?: boolean;
-  blockerIds?: string[];
-  metadata?: Record<string, unknown>;
 }
 
 export interface NormalizedCalendarEvent {
   id: string;
-  provider: "google-calendar" | "apple-calendar";
+  source: "google-calendar" | "apple-calendar";
+  sourceId: string;
+  sourceUrl?: string;
   title: string;
   start: string;
   end: string;
   allDay: boolean;
-  sourceUrl?: string;
-  metadata?: Record<string, unknown>;
+  isBusy: boolean;
+  calendarName?: string;
 }
 
 export interface NormalizedArticleEntry {
   id: string;
-  title: string;
+  source: IntegrationProvider;
+  sourceId: string;
+  sourceUrl?: string;
   submittedAt: string;
+  title: string;
   outlet?: string;
-  status?: string;
   wordCount?: number;
   pay?: number;
-  metadata?: Record<string, unknown>;
+  status?: string;
+  weekKey: string;
+  monthKey: string;
+}
+
+export interface ScoreBreakdown {
+  deadlineProximity: number;
+  writingPaceGap: number;
+  incomeImpact: number;
+  businessImpact: number;
+  urgency: number;
+  areaWeight: number;
+  overdueAdjustment: number;
+  calendarCapacityAdjustment: number;
+  sponsorRiskAdjustment: number;
+  blockedAdjustment: number;
+  createdWorkshopAdjustment: number;
 }
 
 export interface RankedTask extends NormalizedTask {
   score: number;
   rank: number;
   reason: string;
-  scoreBreakdown: {
-    deadline: number;
-    weeklyPace: number;
-    incomeImpact: number;
-    businessImpact: number;
-    blockerPenalty: number;
-    urgency: number;
-    areaWeight: number;
-    calendarCapacityAdjustment: number;
-    overdueBoost: number;
-    sponsorRiskBoost: number;
-  };
+  scoreBreakdown: ScoreBreakdown;
 }
 
 export interface PlannerSummary {
@@ -196,15 +210,18 @@ export interface PlannerTodayResult {
   primaryFocus: string;
   rankedTasks: RankedTask[];
   warnings: string[];
+  generatedAt?: string;
 }
 
 export interface PlannerWeekResult {
   weekStart: string;
   weekEnd: string;
   summary: PlannerSummary;
+  primaryFocus: string;
   rankedPriorities: RankedTask[];
   deadlineRisks: string[];
-  progressStats: Record<string, number>;
+  warnings: string[];
+  generatedAt?: string;
 }
 
 export interface PlanningSnapshot {
@@ -213,9 +230,38 @@ export interface PlanningSnapshot {
   date: string;
   userId: string;
   summary: PlannerSummary;
-  calendarConstraints: NormalizedCalendarEvent[];
-  rankedTasks: RankedTask[];
+  primaryFocus: string;
+  calendarConstraints: Pick<
+    NormalizedCalendarEvent,
+    "id" | "source" | "sourceId" | "title" | "start" | "end" | "allDay" | "isBusy"
+  >[];
+  rankedTasks: Pick<
+    RankedTask,
+    "id" | "source" | "sourceId" | "sourceUrl" | "area" | "title" | "status" | "dueDate" | "isOverdue" | "isBlocked" | "score" | "rank" | "reason" | "scoreBreakdown"
+  >[];
   warnings: string[];
-  rawStats: Record<string, unknown>;
   createdAt: string;
+  generatedAt?: string;
+}
+
+export interface PlanningDebugRecord {
+  id: "today" | "week";
+  userId: string;
+  type: "today" | "week";
+  date: string;
+  generatedAt: string;
+  providerSummaries: Record<
+    string,
+    {
+      taskCount: number;
+      calendarEventCount: number;
+      articleEntryCount: number;
+      preview: Record<string, unknown>;
+    }
+  >;
+  normalizedInputPreview: {
+    tasks: Array<Pick<NormalizedTask, "id" | "source" | "sourceId" | "title" | "area" | "status" | "dueDate" | "isOverdue" | "isBlocked">>;
+    calendarEvents: Array<Pick<NormalizedCalendarEvent, "id" | "source" | "sourceId" | "title" | "start" | "end" | "allDay" | "isBusy">>;
+    articleEntries: Array<Pick<NormalizedArticleEntry, "id" | "source" | "sourceId" | "title" | "submittedAt" | "weekKey" | "monthKey">>;
+  };
 }

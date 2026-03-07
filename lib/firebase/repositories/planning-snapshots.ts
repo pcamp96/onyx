@@ -1,15 +1,24 @@
-import type { PlanningSnapshot } from "@/lib/core/types";
-import { getDb } from "@/lib/firebase/firestore";
-import { nowIso, toPlainObject } from "@/lib/firebase/repositories/base";
+import type { PlanningDebugRecord, PlanningSnapshot } from "@/lib/core/types";
+import { nowIso, toPlainObject, userDocument } from "@/lib/firebase/repositories/base";
 
-const COLLECTION = "planning_snapshots";
+const SNAPSHOT_SUBCOLLECTION = "planning_snapshots";
+const DEBUG_SUBCOLLECTION = "planning_debug";
+
+function snapshotsCollection(userId: string) {
+  return userDocument(userId).collection(SNAPSHOT_SUBCOLLECTION);
+}
+
+function debugRef(userId: string, type: "today" | "week") {
+  return userDocument(userId).collection(DEBUG_SUBCOLLECTION).doc(type);
+}
 
 export const planningSnapshotsRepository = {
-  async save(snapshot: Omit<PlanningSnapshot, "id" | "createdAt">) {
-    const ref = getDb().collection(COLLECTION).doc();
+  async save(userId: string, snapshot: Omit<PlanningSnapshot, "id" | "createdAt" | "userId">) {
+    const ref = snapshotsCollection(userId).doc();
     const payload: PlanningSnapshot = {
       ...snapshot,
       id: ref.id,
+      userId,
       createdAt: nowIso(),
     };
     await ref.set(payload);
@@ -17,9 +26,7 @@ export const planningSnapshotsRepository = {
   },
 
   async getLatest(userId: string, type: "today" | "week"): Promise<PlanningSnapshot | null> {
-    const query = await getDb()
-      .collection(COLLECTION)
-      .where("userId", "==", userId)
+    const query = await snapshotsCollection(userId)
       .where("type", "==", type)
       .orderBy("createdAt", "desc")
       .limit(1)
@@ -30,5 +37,27 @@ export const planningSnapshotsRepository = {
     }
 
     return toPlainObject(query.docs[0]?.data() as PlanningSnapshot);
+  },
+};
+
+export const planningDebugRepository = {
+  async save(userId: string, type: "today" | "week", record: Omit<PlanningDebugRecord, "id" | "userId" | "type">) {
+    const payload: PlanningDebugRecord = {
+      ...record,
+      id: type,
+      userId,
+      type,
+    };
+    await debugRef(userId, type).set(payload, { merge: true });
+    return payload;
+  },
+
+  async get(userId: string, type: "today" | "week"): Promise<PlanningDebugRecord | null> {
+    const snapshot = await debugRef(userId, type).get();
+    if (!snapshot.exists) {
+      return null;
+    }
+
+    return toPlainObject(snapshot.data() as PlanningDebugRecord);
   },
 };

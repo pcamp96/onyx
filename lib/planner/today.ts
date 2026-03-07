@@ -6,9 +6,8 @@ import type {
 import { derivePrimaryFocus, deriveWarnings } from "@/lib/planner/rules";
 import { scoreTask } from "@/lib/planner/scoring";
 import { summarizeArticles } from "@/lib/planner/normalizers";
+import type { PlannerAggregateInput } from "@/lib/planner/types";
 import { toIsoDate } from "@/lib/utils/time";
-
-import type { PlannerAggregateInput } from "@/lib/core/services";
 
 export function buildTodayPlan(input: PlannerAggregateInput, settings: PlannerSettings, now: Date): PlannerTodayResult {
   const summary = summarizeArticles(input.articleEntries, settings, now);
@@ -33,6 +32,7 @@ export function buildTodayPlan(input: PlannerAggregateInput, settings: PlannerSe
     calendarConstraints: input.calendarEvents,
     primaryFocus: derivePrimaryFocus(rankedTasks),
     rankedTasks,
-    warnings: deriveWarnings(rankedTasks, settings),
+    warnings: [...new Set([...input.warnings, ...deriveWarnings(rankedTasks, settings)])],
+    generatedAt: now.toISOString(),
   };
 }

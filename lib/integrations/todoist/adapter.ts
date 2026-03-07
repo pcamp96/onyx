@@ -61,15 +61,17 @@ export class TodoistAdapter implements IntegrationAdapter {
       return {
         id: `todoist-${task.id}`,
         sourceId: task.id,
-        provider: "todoist" as const,
+        source: "todoist" as const,
+        sourceUrl: undefined,
         area,
         title: task.content,
         notes: task.description,
         status: "open" as const,
-        dueAt,
+        dueDate: dueAt,
         isOverdue: isOverdue(dueAt, context.now),
+        isBlocked: false,
         projectId: task.project_id,
-        labels: task.labels,
+        tags: task.labels,
         priority: task.priority,
       };
     });

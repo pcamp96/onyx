@@ -59,14 +59,16 @@ export class AsanaAdapter implements IntegrationAdapter {
       return {
         id: `asana-${task.gid}`,
         sourceId: task.gid,
-        provider: "asana" as const,
+        source: "asana" as const,
+        sourceUrl: `https://app.asana.com/0/${task.gid}`,
         area: pickArea(projectName),
         title: task.name,
         status: task.completed ? ("done" as const) : ("open" as const),
-        dueAt,
+        dueDate: dueAt,
         isOverdue: isOverdue(dueAt, context.now),
+        isBlocked: false,
         projectName,
-        metadata: workspaceId ? { workspaceId } : undefined,
+        projectId: workspaceId,
       };
     });
 

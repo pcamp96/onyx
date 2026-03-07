@@ -8,6 +8,6 @@ export async function GET() {
     return unauthorized();
   }
 
-  const integrations = await integrationsRepository.list();
+  const integrations = await integrationsRepository.list(session.uid);
   return ok(integrations);
 }

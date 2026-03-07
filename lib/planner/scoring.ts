@@ -22,20 +22,20 @@ function calendarCapacityAdjustment(events: NormalizedCalendarEvent[]) {
 }
 
 export function scoreTask({ task, settings, weeklyPaceGap, calendarConstraints }: ScoreInput): RankedTask {
-  const daysToDeadline = daysUntil(task.dueAt);
+  const daysToDeadline = daysUntil(task.dueDate);
   const deadlineScore =
     daysToDeadline === null ? 0 : daysToDeadline <= 0 ? 24 : Math.max(0, 18 - daysToDeadline * 2);
   const paceScore = task.area === "HTG" ? weeklyPaceGap * 4 : weeklyPaceGap > 0 ? 2 : 0;
-  const incomeScore = Math.min(14, Math.round(task.incomeImpact ?? task.estimatedValue ?? 0));
+  const incomeScore = Math.min(14, Math.round(task.incomeImpact ?? 0));
   const businessScore = Math.min(12, Math.round(task.businessImpact ?? 0));
-  const blockerPenalty = task.blockerIds?.length ? -10 : 0;
+  const blockedAdjustment = task.isBlocked ? -10 : 0;
   const urgencyScore = task.priority ? Math.min(10, task.priority * 2) : 0;
   const areaWeight = settings.areaWeights[task.area] ?? 0;
-  const overdueBoost = task.isOverdue ? 14 : 0;
-  const sponsorRiskBoost = task.sponsorRisk ? 16 : 0;
-  const capacityAdjustment = calendarCapacityAdjustment(calendarConstraints);
+  const overdueAdjustment = task.isOverdue ? 14 : 0;
+  const sponsorRiskAdjustment = task.sponsorRisk ? 16 : 0;
+  const calendarAdjustment = -calendarCapacityAdjustment(calendarConstraints);
 
-  const createdWorkshopPenalty =
+  const createdWorkshopAdjustment =
     task.area === "CREATED_WORKSHOP" &&
     settings.createdWorkshopLowPriorityEnabled &&
     !task.sponsorRisk &&
@@ -48,13 +48,13 @@ export function scoreTask({ task, settings, weeklyPaceGap, calendarConstraints }
     paceScore +
     incomeScore +
     businessScore +
-    blockerPenalty +
+    blockedAdjustment +
     urgencyScore +
     areaWeight +
-    overdueBoost +
-    sponsorRiskBoost -
-    capacityAdjustment +
-    createdWorkshopPenalty;
+    overdueAdjustment +
+    sponsorRiskAdjustment +
+    calendarAdjustment +
+    createdWorkshopAdjustment;
 
   const reasonParts = [];
   if (task.area === "HTG" && weeklyPaceGap > 0) {
@@ -79,16 +79,17 @@ export function scoreTask({ task, settings, weeklyPaceGap, calendarConstraints }
     rank: 0,
     reason: reasonParts.join(" "),
     scoreBreakdown: {
-      deadline: deadlineScore,
-      weeklyPace: paceScore,
+      deadlineProximity: deadlineScore,
+      writingPaceGap: paceScore,
       incomeImpact: incomeScore,
       businessImpact: businessScore,
-      blockerPenalty,
       urgency: urgencyScore,
       areaWeight,
-      calendarCapacityAdjustment: -capacityAdjustment,
-      overdueBoost,
-      sponsorRiskBoost,
+      overdueAdjustment,
+      calendarCapacityAdjustment: calendarAdjustment,
+      sponsorRiskAdjustment,
+      blockedAdjustment,
+      createdWorkshopAdjustment,
     },
   };
 }

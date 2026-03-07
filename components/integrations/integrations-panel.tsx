@@ -8,9 +8,10 @@ import { PROVIDER_LABELS } from "@/lib/config/constants";
 type Props = {
   integrations: IntegrationRecord[];
   googleSheetsConfig: GoogleSheetConfig | null;
+  configs: Partial<Record<IntegrationProvider, Record<string, unknown>>>;
 };
 
-export function IntegrationsPanel({ integrations, googleSheetsConfig }: Props) {
+export function IntegrationsPanel({ integrations, googleSheetsConfig, configs }: Props) {
   const [items, setItems] = useState(integrations);
   const [sheetConfig, setSheetConfig] = useState<GoogleSheetConfig | null>(googleSheetsConfig);
   const [status, setStatus] = useState<string | null>(null);
@@ -27,14 +28,12 @@ export function IntegrationsPanel({ integrations, googleSheetsConfig }: Props) {
       throw new Error("Failed to update integration");
     }
 
-    const updated = (await response.json()) as IntegrationRecord | { integration: IntegrationRecord; googleSheetConfig?: GoogleSheetConfig };
+    const updated = (await response.json()) as { integration: IntegrationRecord; config?: Record<string, unknown> | GoogleSheetConfig | null };
     if ("integration" in updated) {
       setItems((current) => current.map((item) => (item.provider === provider ? updated.integration : item)));
-      if (updated.googleSheetConfig) {
-        setSheetConfig(updated.googleSheetConfig);
+      if (provider === "google-sheets" && updated.config) {
+        setSheetConfig(updated.config as GoogleSheetConfig);
       }
-    } else {
-      setItems((current) => current.map((item) => (item.provider === provider ? updated : item)));
     }
   }
 
@@ -66,6 +65,7 @@ export function IntegrationsPanel({ integrations, googleSheetsConfig }: Props) {
           key={integration.provider}
           integration={integration}
           googleSheetsConfig={sheetConfig}
+          initialConfig={configs[integration.provider] ?? null}
           busy={isPending}
           onSave={(payload) =>
             startTransition(async () => {
@@ -91,6 +91,7 @@ export function IntegrationsPanel({ integrations, googleSheetsConfig }: Props) {
 function IntegrationCard({
   integration,
   googleSheetsConfig,
+  initialConfig,
   busy,
   onSave,
   onSecretSave,
@@ -98,13 +99,14 @@ function IntegrationCard({
 }: {
   integration: IntegrationRecord;
   googleSheetsConfig: GoogleSheetConfig | null;
+  initialConfig: Record<string, unknown> | null;
   busy: boolean;
   onSave: (payload: Record<string, unknown>) => void;
   onSecretSave: (secret: string) => void;
   onAction: (action: "test" | "sync") => void;
 }) {
   const [secret, setSecret] = useState("");
-  const record = integration as unknown as Record<string, unknown>;
+  const record = (initialConfig ?? {}) as Record<string, unknown>;
   const [localConfig, setLocalConfig] = useState<Record<string, string>>(() => {
     if (integration.provider === "google-sheets") {
       return {
@@ -173,7 +175,7 @@ function IntegrationCard({
           <input
             type="checkbox"
             checked={integration.enabled}
-            onChange={(event) => onSave({ enabled: event.target.checked })}
+          onChange={(event) => onSave({ enabled: event.target.checked })}
           />
           Enable integration
         </label>
@@ -243,7 +245,7 @@ function IntegrationCard({
             return;
           }
 
-          onSave(localConfig);
+          onSave({ config: localConfig });
         }}
         className="mt-6 rounded-full bg-stone-950 px-5 py-3 text-sm font-semibold text-stone-50"
       >

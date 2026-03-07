@@ -2,6 +2,14 @@ export function toIsoDate(value: Date) {
   return value.toISOString().slice(0, 10);
 }
 
+export function toMonthKey(value: Date) {
+  return value.toISOString().slice(0, 7);
+}
+
+export function toWeekKey(value: Date) {
+  return toIsoDate(startOfWeek(value));
+}
+
 export function startOfWeek(value: Date) {
   const date = new Date(value);
   const day = date.getDay();

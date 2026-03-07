@@ -10,4 +10,4 @@ export function listPluginManifests() {
   return manifests;
 }
 
-// TODO: Load external plugin manifests from a trusted open-source plugin package directory.
+// TODO: Extend registry bootstrap when additional first-party or local code-level plugins are added.

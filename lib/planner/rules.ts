@@ -27,7 +27,7 @@ export function deriveWarnings(tasks: NormalizedTask[], settings: PlannerSetting
   }
 
   const urgentCreatedWorkshop = tasks.find((task) => {
-    const days = daysUntil(task.dueAt);
+    const days = daysUntil(task.dueDate);
     return task.area === "CREATED_WORKSHOP" && days !== null && days <= settings.sponsorUrgencyDays;
   });
   if (urgentCreatedWorkshop) {

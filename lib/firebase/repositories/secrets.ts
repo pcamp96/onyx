@@ -1,13 +1,16 @@
 import type { EncryptedSecretRecord, IntegrationProvider } from "@/lib/core/types";
 import type { EncryptedPayload } from "@/lib/security/encryption-provider";
-import { getDb } from "@/lib/firebase/firestore";
-import { nowIso, toPlainObject } from "@/lib/firebase/repositories/base";
+import { nowIso, toPlainObject, userDocument } from "@/lib/firebase/repositories/base";
 
-const COLLECTION = "integration_secrets";
+const SUBCOLLECTION = "integration_secrets";
+
+function secretRef(userId: string, provider: IntegrationProvider) {
+  return userDocument(userId).collection(SUBCOLLECTION).doc(provider);
+}
 
 export const secretsRepository = {
-  async get(provider: IntegrationProvider): Promise<EncryptedSecretRecord | null> {
-    const snapshot = await getDb().collection(COLLECTION).doc(provider).get();
+  async get(userId: string, provider: IntegrationProvider): Promise<EncryptedSecretRecord | null> {
+    const snapshot = await secretRef(userId, provider).get();
     if (!snapshot.exists) {
       return null;
     }
@@ -16,19 +19,21 @@ export const secretsRepository = {
   },
 
   async save(
+    userId: string,
     provider: IntegrationProvider,
     payload: EncryptedPayload & {
       updatedBy: string;
     },
   ) {
     const record: EncryptedSecretRecord = {
+      userId,
       provider,
       ...payload,
       updatedAt: nowIso(),
       updatedBy: payload.updatedBy,
     };
 
-    await getDb().collection(COLLECTION).doc(provider).set(record, { merge: true });
+    await secretRef(userId, provider).set(record, { merge: true });
     return record;
   },
 };

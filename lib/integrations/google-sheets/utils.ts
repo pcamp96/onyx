@@ -1,4 +1,5 @@
 import type { GoogleSheetColumnMapping, NormalizedArticleEntry } from "@/lib/core/types";
+import { toMonthKey, toWeekKey } from "@/lib/utils/time";
 
 export function extractSpreadsheetId(input: string) {
   const trimmed = input.trim();
@@ -41,12 +42,17 @@ export function mapSheetRowsToArticles(
     return [
       {
         id: `sheet-row-${index + 1}`,
-        title,
+        source: "google-sheets",
+        sourceId: `row-${index + 1}`,
+        sourceUrl: undefined,
         submittedAt: new Date(submittedAt).toISOString(),
+        title,
         wordCount: wordCountIndex >= 0 ? Number(row[wordCountIndex]) || undefined : undefined,
         pay: payIndex >= 0 ? Number(row[payIndex]) || undefined : undefined,
         status: statusIndex >= 0 ? row[statusIndex]?.trim() || undefined : undefined,
         outlet: outletIndex >= 0 ? row[outletIndex]?.trim() || undefined : undefined,
+        weekKey: toWeekKey(new Date(submittedAt)),
+        monthKey: toMonthKey(new Date(submittedAt)),
       },
     ];
   });

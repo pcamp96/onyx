@@ -1,10 +1,10 @@
 import type { PlannerSettings, PlannerWeekResult, RankedTask } from "@/lib/core/types";
 import { deriveWarnings } from "@/lib/planner/rules";
+import { derivePrimaryFocus } from "@/lib/planner/rules";
 import { scoreTask } from "@/lib/planner/scoring";
 import { summarizeArticles } from "@/lib/planner/normalizers";
 import { endOfWeek, startOfWeek, toIsoDate } from "@/lib/utils/time";
-
-import type { PlannerAggregateInput } from "@/lib/core/services";
+import type { PlannerAggregateInput } from "@/lib/planner/types";
 
 export function buildWeekPlan(input: PlannerAggregateInput, settings: PlannerSettings, now: Date): PlannerWeekResult {
   const summary = summarizeArticles(input.articleEntries, settings, now);
@@ -22,16 +22,16 @@ export function buildWeekPlan(input: PlannerAggregateInput, settings: PlannerSet
       rank: index + 1,
     }));
 
+  const warnings = [...new Set([...input.warnings, ...deriveWarnings(rankedPriorities, settings)])];
+
   return {
     weekStart: toIsoDate(startOfWeek(now)),
     weekEnd: toIsoDate(endOfWeek(now)),
     summary,
+    primaryFocus: derivePrimaryFocus(rankedPriorities),
     rankedPriorities,
-    deadlineRisks: deriveWarnings(rankedPriorities, settings),
-    progressStats: {
-      tasksConsidered: input.tasks.length,
-      calendarEventsConsidered: input.calendarEvents.length,
-      articleEntriesConsidered: input.articleEntries.length,
-    },
+    deadlineRisks: warnings,
+    warnings,
+    generatedAt: now.toISOString(),
   };
 }

@@ -1,8 +1,8 @@
-import type { PlannerTodayResult, PlannerWeekResult } from "@/lib/core/types";
+import type { PlanningSnapshot } from "@/lib/core/types";
 
 type Props = {
-  today: PlannerTodayResult | null;
-  week: PlannerWeekResult | null;
+  today: PlanningSnapshot | null;
+  week: PlanningSnapshot | null;
 };
 
 export function OverviewDashboard({ today, week }: Props) {
@@ -63,7 +63,7 @@ export function OverviewDashboard({ today, week }: Props) {
             <div className="mt-6 space-y-2 text-sm text-stone-300">
               <p>Remaining to minimum: {week?.summary.remainingToMinimum ?? 0}</p>
               <p>Remaining to goal: {week?.summary.remainingToGoal ?? 0}</p>
-              <p>Weekly priorities: {week?.rankedPriorities.length ?? 0}</p>
+              <p>Weekly priorities: {week?.rankedTasks.length ?? 0}</p>
             </div>
           </section>
         </div>

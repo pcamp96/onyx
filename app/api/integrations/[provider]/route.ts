@@ -1,8 +1,7 @@
 import { NextRequest } from "next/server";
 
-import { FOUNDER_USER_ID } from "@/lib/config/constants";
-import type { IntegrationProvider } from "@/lib/core/types";
-import { googleSheetConfigRepository, integrationsRepository } from "@/lib/firebase/repositories/integrations";
+import type { GoogleSheetConfig, IntegrationProvider } from "@/lib/core/types";
+import { integrationConfigsRepository, integrationsRepository } from "@/lib/firebase/repositories/integrations";
 import { requireApiSession } from "@/lib/utils/auth";
 import { ok, unauthorized } from "@/lib/utils/http";
 
@@ -17,8 +16,15 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ pr
   }
 
   const provider = await getProvider(context.params);
-  const integration = await integrationsRepository.get(provider);
-  return ok(integration);
+  const [integration, config] = await Promise.all([
+    integrationsRepository.get(session.uid, provider),
+    integrationConfigsRepository.get(session.uid, provider),
+  ]);
+
+  return ok({
+    integration,
+    config: config?.values ?? null,
+  });
 }
 
 export async function PUT(request: NextRequest, context: { params: Promise<{ provider: string }> }) {
@@ -31,22 +37,29 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ pro
   const body = await request.json();
 
   if (provider === "google-sheets" && body.googleSheetConfig) {
-    const googleSheetConfig = await googleSheetConfigRepository.save(FOUNDER_USER_ID, {
-      ...body.googleSheetConfig,
-      updatedBy: session.uid,
-    });
-    const integration = await integrationsRepository.save(provider, {
-      updatedBy: session.uid,
-      enabled: true,
-      status: "connected",
-    });
+    const googleSheetConfig = body.googleSheetConfig as GoogleSheetConfig;
+    const [integration, config] = await Promise.all([
+      integrationsRepository.save(session.uid, provider, {
+        updatedBy: session.uid,
+        enabled: true,
+        status: "connected",
+      }),
+      integrationConfigsRepository.save(session.uid, provider, googleSheetConfig as unknown as Record<string, unknown>, session.uid),
+    ]);
 
-    return ok({ integration, googleSheetConfig });
+    return ok({ integration, config: config.values });
   }
 
-  const integration = await integrationsRepository.save(provider, {
-    ...body,
+  const { config, ...integrationInput } = body as { config?: Record<string, unknown> } & Record<string, unknown>;
+  const integration = await integrationsRepository.save(session.uid, provider, {
+    ...integrationInput,
     updatedBy: session.uid,
   });
-  return ok(integration);
+
+  if (!config) {
+    return ok({ integration, config: null });
+  }
+
+  const savedConfig = await integrationConfigsRepository.save(session.uid, provider, config, session.uid);
+  return ok({ integration, config: savedConfig.values });
 }

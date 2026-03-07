@@ -1,9 +1,10 @@
 import { SettingsForm } from "@/components/settings/settings-form";
-import { FOUNDER_USER_ID } from "@/lib/config/constants";
+import { requireSession } from "@/lib/firebase/auth";
 import { plannerSettingsRepository } from "@/lib/firebase/repositories/planner-settings";
 
 export default async function SettingsPage() {
-  const settings = await plannerSettingsRepository.get(FOUNDER_USER_ID);
+  const session = await requireSession();
+  const settings = await plannerSettingsRepository.get(session.uid);
 
   return <SettingsForm initialSettings={settings} />;
 }

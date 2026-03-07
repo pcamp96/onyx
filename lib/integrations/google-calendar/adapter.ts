@@ -21,11 +21,14 @@ function mapEvent(event: Record<string, unknown>): NormalizedCalendarEvent {
 
   return {
     id: String(event.id),
-    provider: "google-calendar",
+    source: "google-calendar",
+    sourceId: String(event.id),
     title: String(event.summary ?? "Untitled event"),
     start: start.dateTime ?? `${start.date}T00:00:00.000Z`,
     end: end.dateTime ?? `${end.date}T00:00:00.000Z`,
     allDay: !start.dateTime,
+    isBusy: true,
+    calendarName: typeof event.organizer === "string" ? event.organizer : undefined,
     sourceUrl: typeof event.htmlLink === "string" ? event.htmlLink : undefined,
   };
 }

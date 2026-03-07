@@ -19,7 +19,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ pr
 
   const provider = (await context.params).provider as IntegrationProvider;
   const encrypted = await encryptIntegrationSecret(provider, body.secret, session.uid);
-  await secretsRepository.save(provider, {
+  await secretsRepository.save(session.uid, provider, {
     ...encrypted,
     updatedBy: session.uid,
   });

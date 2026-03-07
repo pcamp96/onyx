@@ -1,5 +1,4 @@
-import { FOUNDER_USER_ID } from "@/lib/config/constants";
-import { planningSnapshotsRepository } from "@/lib/firebase/repositories/planning-snapshots";
+import { planningDebugRepository, planningSnapshotsRepository } from "@/lib/firebase/repositories/planning-snapshots";
 import { requireApiSession } from "@/lib/utils/auth";
 import { ok, unauthorized } from "@/lib/utils/http";
 
@@ -9,6 +8,9 @@ export async function GET() {
     return unauthorized();
   }
 
-  const snapshot = await planningSnapshotsRepository.getLatest(FOUNDER_USER_ID, "week");
-  return ok(snapshot);
+  const [snapshot, debug] = await Promise.all([
+    planningSnapshotsRepository.getLatest(session.uid, "week"),
+    planningDebugRepository.get(session.uid, "week"),
+  ]);
+  return ok({ snapshot, debug });
 }

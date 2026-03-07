@@ -20,8 +20,6 @@ export const usersRepository = {
     const payload = {
       email: profile.email ?? "",
       displayName: profile.displayName ?? "",
-      role: "admin" as const,
-      status: profile.status ?? "active",
       createdAt: existing.exists ? (existing.data()?.createdAt ?? nowIso()) : nowIso(),
       updatedAt: nowIso(),
       lastLoginAt: profile.lastLoginAt ?? existing.data()?.lastLoginAt ?? nowIso(),

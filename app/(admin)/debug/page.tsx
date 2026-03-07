@@ -1,12 +1,10 @@
 import { DebugPanel } from "@/components/debug/debug-panel";
-import { FOUNDER_USER_ID } from "@/lib/config/constants";
-import { planningSnapshotsRepository } from "@/lib/firebase/repositories/planning-snapshots";
+import { requireSession } from "@/lib/firebase/auth";
+import { getLatestPlannerArtifacts } from "@/lib/planner/service";
 
 export default async function DebugPage() {
-  const [today, week] = await Promise.all([
-    planningSnapshotsRepository.getLatest(FOUNDER_USER_ID, "today"),
-    planningSnapshotsRepository.getLatest(FOUNDER_USER_ID, "week"),
-  ]);
+  const session = await requireSession();
+  const { todaySnapshot, weekSnapshot, todayDebug, weekDebug } = await getLatestPlannerArtifacts(session.uid);
 
-  return <DebugPanel today={today} week={week} />;
+  return <DebugPanel todaySnapshot={todaySnapshot} weekSnapshot={weekSnapshot} todayDebug={todayDebug} weekDebug={weekDebug} />;
 }

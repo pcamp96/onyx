@@ -23,11 +23,14 @@ function toEvent(event: ical.VEvent): NormalizedCalendarEvent {
 
   return {
     id: event.uid || `${event.start.toISOString()}-${event.summary}`,
-    provider: "apple-calendar",
+    source: "apple-calendar",
+    sourceId: event.uid || `${event.start.toISOString()}-${event.summary}`,
     title,
     start: event.start.toISOString(),
     end: (event.end ?? event.start).toISOString(),
     allDay: Boolean(event.datetype === "date"),
+    isBusy: true,
+    calendarName: "Apple Calendar",
     sourceUrl,
   };
 }
