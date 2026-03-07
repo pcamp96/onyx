@@ -21,8 +21,10 @@ const serverEnvSchema = z.object({
 });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;
+export type FirebaseClientEnv = ReturnType<typeof getFirebaseClientEnv>;
 
 let cachedServerEnv: ServerEnv | null = null;
+let cachedServerEnvError: z.ZodError | null = null;
 
 export function getServerEnv(): ServerEnv {
   if (cachedServerEnv) {
@@ -45,4 +47,28 @@ export function getFirebaseClientEnv() {
     appId: env.FIREBASE_APP_ID,
     measurementId: env.FIREBASE_MEASUREMENT_ID || undefined,
   };
+}
+
+export function getServerEnvError() {
+  if (cachedServerEnv || cachedServerEnvError) {
+    return cachedServerEnvError;
+  }
+
+  const parsed = serverEnvSchema.safeParse(process.env);
+  if (parsed.success) {
+    cachedServerEnv = parsed.data;
+    return null;
+  }
+
+  cachedServerEnvError = parsed.error;
+  return cachedServerEnvError;
+}
+
+export function getOptionalFirebaseClientEnv() {
+  const error = getServerEnvError();
+  if (error) {
+    return null;
+  }
+
+  return getFirebaseClientEnv();
 }
