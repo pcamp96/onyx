@@ -5,7 +5,7 @@ import type {
   IntegrationProvider,
   IntegrationRecord,
 } from "@/lib/core/types";
-import { nowIso, toPlainObject, userDocument } from "@/lib/firebase/repositories/base";
+import { nowIso, stripUndefinedDeep, toPlainObject, userDocument } from "@/lib/firebase/repositories/base";
 
 const INTEGRATIONS_SUBCOLLECTION = "integrations";
 const INTEGRATION_CONFIGS_SUBCOLLECTION = "integration_configs";
@@ -60,8 +60,9 @@ export const integrationsRepository = {
       updatedAt: nowIso(),
     };
 
-    await integrationRef(userId, provider).set(payload, { merge: true });
-    return payload;
+    const sanitizedPayload = stripUndefinedDeep(payload);
+    await integrationRef(userId, provider).set(sanitizedPayload, { merge: true });
+    return sanitizedPayload;
   },
 };
 
@@ -96,8 +97,9 @@ export const integrationConfigsRepository = {
       updatedBy,
     };
 
-    await integrationConfigRef(userId, provider).set(payload, { merge: true });
-    return payload;
+    const sanitizedPayload = stripUndefinedDeep(payload);
+    await integrationConfigRef(userId, provider).set(sanitizedPayload, { merge: true });
+    return sanitizedPayload;
   },
 
   async getGoogleSheetsConfig(userId: string): Promise<GoogleSheetConfig | null> {

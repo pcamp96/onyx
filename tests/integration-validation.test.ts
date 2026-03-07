@@ -40,6 +40,22 @@ describe("integration validation", () => {
     }));
   });
 
+  it("accepts multiple worksheet names for Google Sheets config", async () => {
+    const adapter = new GoogleSheetsAdapter();
+
+    await expect(
+      adapter.sync({
+        userId: "user-1",
+        secret: null,
+        config: { spreadsheetId: "sheet-1", worksheetNames: ["March 2-6"] },
+        now,
+      }),
+    ).rejects.not.toEqual(expect.objectContaining<Partial<IntegrationRequestError>>({
+      message: "Google Sheets worksheet name is missing",
+      status: 400,
+    }));
+  });
+
   it("rejects invalid Apple Calendar feed URLs", async () => {
     const adapter = new AppleCalendarAdapter();
 

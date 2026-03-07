@@ -86,10 +86,12 @@ export type GoogleSheetLayout = "table" | "weekly_grid";
 export interface GoogleSheetConfig {
   spreadsheetId: string;
   worksheetName: string;
+  worksheetNames?: string[];
   sourceUrl?: string;
   layout?: GoogleSheetLayout;
   headerRow?: number;
   dataStartRow?: number;
+  endRow?: number;
   weekStartDate?: string;
   columnMapping: GoogleSheetColumnMapping;
 }

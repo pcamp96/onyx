@@ -46,20 +46,36 @@ export class GoogleSheetsAdapter implements IntegrationAdapter {
       throw new IntegrationRequestError("Google Sheets spreadsheetId is missing");
     }
 
-    if (!config.worksheetName?.trim()) {
-      throw new IntegrationRequestError("Google Sheets worksheetName is missing");
+    const worksheetNames = config.worksheetNames?.length ? config.worksheetNames : [config.worksheetName].filter(Boolean);
+    if (!worksheetNames.length) {
+      throw new IntegrationRequestError("Google Sheets worksheet name is missing");
     }
 
     const auth = buildAuth(context.secret);
     try {
       const sheets = google.sheets({ version: "v4", auth });
-      const range = `${config.worksheetName}!A:Z`;
-      const response = await sheets.spreadsheets.values.get({
-        spreadsheetId,
-        range,
-      });
-      const rows = (response.data.values ?? []) as string[][];
-      const articleEntries = mapSheetRowsToArticles(rows, config);
+      const worksheetResults = await Promise.all(
+        worksheetNames.map(async (worksheetName) => {
+          const range = `${worksheetName}!A:Z`;
+          const response = await sheets.spreadsheets.values.get({
+            spreadsheetId,
+            range,
+          });
+          const rows = (response.data.values ?? []) as string[][];
+          const articleEntries = mapSheetRowsToArticles(rows, {
+            ...config,
+            worksheetName,
+          });
+
+          return {
+            worksheetName,
+            rowCount: rows.length,
+            articleEntries,
+          };
+        }),
+      );
+
+      const articleEntries = worksheetResults.flatMap((result) => result.articleEntries);
 
       return {
         tasks: [],
@@ -68,8 +84,9 @@ export class GoogleSheetsAdapter implements IntegrationAdapter {
         warnings: [],
         rawPreview: {
           spreadsheetId,
-          worksheetName: config.worksheetName,
-          rowCount: rows.length,
+          worksheetNames,
+          worksheetCount: worksheetResults.length,
+          rowCount: worksheetResults.reduce((total, result) => total + result.rowCount, 0),
         },
       };
     } catch (error) {

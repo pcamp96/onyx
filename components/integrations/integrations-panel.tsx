@@ -29,10 +29,12 @@ type BannerState = {
 type IntegrationLocalConfig = {
   spreadsheetId: string;
   worksheetName: string;
+  worksheetNames: string[];
   sourceUrl: string;
   layout: "table" | "weekly_grid";
   headerRow: string;
   dataStartRow: string;
+  endRow: string;
   weekStartDate: string;
   submitted_at: string;
   title: string;
@@ -186,10 +188,12 @@ function IntegrationCard({
   const [localConfig, setLocalConfig] = useState<IntegrationLocalConfig>(() => ({
     spreadsheetId: googleSheetsConfig?.spreadsheetId ?? "",
     worksheetName: googleSheetsConfig?.worksheetName ?? "",
+    worksheetNames: toStringList(googleSheetsConfig?.worksheetNames, googleSheetsConfig?.worksheetName),
     sourceUrl: googleSheetsConfig?.sourceUrl ?? "",
     layout: googleSheetsConfig?.layout ?? "table",
     headerRow: String(googleSheetsConfig?.headerRow ?? 1),
     dataStartRow: String(googleSheetsConfig?.dataStartRow ?? 2),
+    endRow: String(googleSheetsConfig?.endRow ?? ""),
     weekStartDate: googleSheetsConfig?.weekStartDate ?? "",
     submitted_at: googleSheetsConfig?.columnMapping.submitted_at ?? "submitted_at",
     title: googleSheetsConfig?.columnMapping.title ?? "title",
@@ -261,11 +265,27 @@ function IntegrationCard({
                     value={localConfig.spreadsheetId ?? ""}
                     onChange={(value) => setLocalConfig((current) => ({ ...current, spreadsheetId: value }))}
                   />
-                  <Field
-                    label="Worksheet"
-                    value={localConfig.worksheetName ?? ""}
-                    onChange={(value) => setLocalConfig((current) => ({ ...current, worksheetName: value }))}
-                  />
+                  {localConfig.layout === "weekly_grid" ? (
+                    <MultiValueField
+                      label="Weekly worksheets"
+                      hint="Add each weekly tab in this monthly workbook, for example March 2-6 and March 9-13."
+                      values={localConfig.worksheetNames}
+                      onChange={(values) =>
+                        setLocalConfig((current) => ({
+                          ...current,
+                          worksheetNames: values,
+                          worksheetName: values.find((value) => value.trim()) ?? "",
+                        }))
+                      }
+                      placeholder="March 2-6"
+                    />
+                  ) : (
+                    <Field
+                      label="Worksheet"
+                      value={localConfig.worksheetName ?? ""}
+                      onChange={(value) => setLocalConfig((current) => ({ ...current, worksheetName: value }))}
+                    />
+                  )}
                 </div>
                 <Field
                   label="Sheet URL"
@@ -313,11 +333,17 @@ function IntegrationCard({
                     value={localConfig.dataStartRow}
                     onChange={(value) => setLocalConfig((current) => ({ ...current, dataStartRow: value }))}
                   />
+                  <Field
+                    label="Stop before row"
+                    hint="Optional. Use this to exclude totals and monthly summary rows."
+                    value={localConfig.endRow}
+                    onChange={(value) => setLocalConfig((current) => ({ ...current, endRow: value }))}
+                  />
                 </div>
                 {localConfig.layout === "weekly_grid" ? (
                   <Field
                     label="Week starts on"
-                    hint="Optional ISO date like 2026-03-02. Leave blank if the worksheet name starts with a date like March 2-6."
+                    hint="Optional shared ISO date like 2026-03-02. Leave blank if each worksheet name starts with a date like March 2-6."
                     value={localConfig.weekStartDate}
                     onChange={(value) => setLocalConfig((current) => ({ ...current, weekStartDate: value }))}
                   />
@@ -365,11 +391,13 @@ function IntegrationCard({
                   onSave({
                     googleSheetConfig: {
                       spreadsheetId: localConfig.spreadsheetId,
-                      worksheetName: localConfig.worksheetName,
+                      worksheetName: localConfig.layout === "weekly_grid" ? compactList(localConfig.worksheetNames)[0] ?? "" : localConfig.worksheetName,
+                      worksheetNames: localConfig.layout === "weekly_grid" ? compactList(localConfig.worksheetNames) : undefined,
                       sourceUrl: localConfig.sourceUrl,
                       layout: localConfig.layout,
                       headerRow: parseOptionalNumber(localConfig.headerRow),
                       dataStartRow: parseOptionalNumber(localConfig.dataStartRow),
+                      endRow: parseOptionalNumber(localConfig.endRow),
                       weekStartDate: localConfig.weekStartDate || undefined,
                       columnMapping: {
                         submitted_at: localConfig.submitted_at,

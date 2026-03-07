@@ -8,6 +8,44 @@ export function extractSpreadsheetId(input: string) {
   return match?.[1] ?? trimmed;
 }
 
+function normalizeWorksheetNames(raw: unknown, fallbackWorksheetName?: string) {
+  const splitNames = (values: string[]) =>
+    values
+      .flatMap((value) => value.split(/[\n,]+/))
+      .map((value) => value.trim())
+      .filter(Boolean);
+
+  const names = Array.isArray(raw)
+    ? splitNames(raw.filter((value): value is string => typeof value === "string"))
+    : [];
+
+  if (names.length) {
+    return names;
+  }
+
+  if (fallbackWorksheetName?.trim()) {
+    return splitNames([fallbackWorksheetName]);
+  }
+
+  return [];
+}
+
+function inferLayout(rawLayout: unknown, worksheetNames: string[]) {
+  if (rawLayout === "weekly_grid") {
+    return "weekly_grid" as const;
+  }
+
+  if (rawLayout === "table") {
+    return "table" as const;
+  }
+
+  if (worksheetNames.length > 1) {
+    return "weekly_grid" as const;
+  }
+
+  return "table" as const;
+}
+
 function normalizeCell(value: string | undefined) {
   return value?.trim() ?? "";
 }
@@ -78,8 +116,9 @@ function toArticleEntry(
 function mapTableRows(rows: string[][], config: GoogleSheetConfig): NormalizedArticleEntry[] {
   const headerRowNumber = Math.max(config.headerRow ?? 1, 1);
   const dataStartRowNumber = Math.max(config.dataStartRow ?? headerRowNumber + 1, headerRowNumber + 1);
+  const dataEndRowNumber = Math.max(config.endRow ?? rows.length, dataStartRowNumber - 1);
   const headers = rows[headerRowNumber - 1] ?? [];
-  const dataRows = rows.slice(dataStartRowNumber - 1);
+  const dataRows = rows.slice(dataStartRowNumber - 1, dataEndRowNumber);
   const mapping = config.columnMapping;
   const submittedAtIndex = findColumnIndex(headers, mapping.submitted_at);
   const titleIndex = findColumnIndex(headers, mapping.title);
@@ -164,6 +203,7 @@ function mapWeeklyGridRows(rows: string[][], config: GoogleSheetConfig): Normali
   const subheaderRowNumber = Math.max(config.headerRow ?? 2, 2);
   const dayHeaderRowNumber = subheaderRowNumber - 1;
   const dataStartRowNumber = Math.max(config.dataStartRow ?? subheaderRowNumber + 1, subheaderRowNumber + 1);
+  const dataEndRowNumber = Math.max(config.endRow ?? rows.length, dataStartRowNumber - 1);
   const dayHeaders = rows[dayHeaderRowNumber - 1] ?? [];
   const subheaders = rows[subheaderRowNumber - 1] ?? [];
   const weekStart = parseWeekStartDate(config, new Date().getUTCFullYear());
@@ -220,7 +260,7 @@ function mapWeeklyGridRows(rows: string[][], config: GoogleSheetConfig): Normali
     throw new IntegrationRequestError("Google Sheets weekly grid layout could not find any title columns");
   }
 
-  return rows.slice(dataStartRowNumber - 1).flatMap((row, rowOffset) =>
+  return rows.slice(dataStartRowNumber - 1, dataEndRowNumber).flatMap((row, rowOffset) =>
     groups.flatMap((group) => {
       const title = normalizeCell(row[group.titleColumn]);
       if (!title) {
@@ -262,14 +302,18 @@ export function toGoogleSheetConfig(
 ): GoogleSheetConfig {
   const raw = input as Record<string, unknown>;
   const columnMapping = (raw.columnMapping ?? {}) as GoogleSheetColumnMapping;
+  const worksheetName = typeof raw.worksheetName === "string" ? raw.worksheetName : "";
+  const worksheetNames = normalizeWorksheetNames(raw.worksheetNames, worksheetName);
 
   return {
     spreadsheetId: typeof raw.spreadsheetId === "string" ? raw.spreadsheetId : "",
-    worksheetName: typeof raw.worksheetName === "string" ? raw.worksheetName : "",
+    worksheetName: worksheetNames[0] ?? "",
+    worksheetNames,
     sourceUrl: typeof raw.sourceUrl === "string" ? raw.sourceUrl : undefined,
-    layout: raw.layout === "weekly_grid" ? "weekly_grid" : "table",
+    layout: inferLayout(raw.layout, worksheetNames),
     headerRow: typeof raw.headerRow === "number" ? raw.headerRow : undefined,
     dataStartRow: typeof raw.dataStartRow === "number" ? raw.dataStartRow : undefined,
+    endRow: typeof raw.endRow === "number" ? raw.endRow : undefined,
     weekStartDate: typeof raw.weekStartDate === "string" ? raw.weekStartDate : undefined,
     columnMapping: {
       submitted_at: typeof columnMapping.submitted_at === "string" ? columnMapping.submitted_at : "submitted_at",
