@@ -229,7 +229,10 @@ function buildSchemaComponents() {
         required: ["error"],
         properties: {
           error: { type: "string", minLength: 1 },
-          details: true,
+          details: {
+            type: "object",
+            additionalProperties: true,
+          },
         },
       },
       PlannerSummary: {
