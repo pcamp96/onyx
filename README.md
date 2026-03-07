@@ -15,7 +15,9 @@ Onyx is a daily priority engine. It ranks what must get done today and this week
 
 - Authenticated founder/admin UI
 - Ranked `/today` and `/week` planner endpoints
+- Contextual `contentPrompts` suggestions embedded near the end of planning outputs for build-in-public posting ideas
 - Firestore-backed settings, snapshots, captures, integration config, and plugin metadata
+- GPT Setup page for generating a canonical Custom GPT action configuration and a dedicated API key
 - Server-side encrypted integration secrets
 - Read-only integrations for Google Sheets, Apple Calendar ICS, Google Calendar, Asana, and Todoist
 - Debug view for latest planner snapshots
@@ -96,6 +98,7 @@ openssl rand -base64 32
    - `users/{userId}/integrations/{provider}`
    - `users/{userId}/integration_configs/{provider}`
    - `users/{userId}/integration_secrets/{provider}`
+   - `users/{userId}/gpt_api_credentials/default`
    - `users/{userId}/planning_snapshots/{snapshotId}`
    - `users/{userId}/planning_debug/{type}`
    - `planner_settings/{userId}`
@@ -109,6 +112,70 @@ openssl rand -base64 32
 2. The browser sends the Firebase ID token to `/api/auth/session`.
 3. The server verifies it with Firebase Admin and creates an HTTP-only session cookie.
 4. Admin routes and APIs verify that session cookie server-side.
+5. GPT-facing founder endpoints can also authenticate with a dedicated `X-Onyx-API-Key` token created from `/gpt-setup`.
+
+## GPT Setup
+
+- Visit `/gpt-setup` after signing in.
+- Generate a GPT API key for your user. The plaintext token is shown once and then stored only as a hash.
+- Import the canonical action schema from `/api/openapi.json`.
+- If you prefer a pasteable version, use `/api/openapi.yaml`.
+- In Custom GPT action auth, choose API Key and set the header name to `X-Onyx-API-Key`.
+- Paste the generated instruction block from the GPT Setup page into your Custom GPT instructions.
+- Rotate or revoke the GPT token from the same page whenever you need to replace access.
+- `APP_URL` must be the externally reachable HTTPS origin for schema import and GPT action calls to work correctly in self-hosted deployments.
+
+## Content prompts
+
+Onyx now adds optional `contentPrompts` suggestions to planning output. The planner keeps them secondary to execution priorities and chooses them from live context such as ranked tasks, weekly pace, blockers, recent wins, and inferred project context.
+
+Current behavior:
+
+- `/today` returns 3 to 5 prompt candidates optimized for progress updates, build-in-public posts, lessons, and behind-the-scenes content.
+- `/week` returns 5 to 10 prompt candidates optimized for story arcs, reflections, vision, and strategic lessons.
+- Downstream renderers can call the same generator in `ideas` or `stats` mode to produce experiment-oriented or metric-oriented prompts without creating a separate command system.
+
+Example `/today` section:
+
+```md
+## Content Prompts
+
+1. [Build in public] Onyx
+Prompt: Today I pushed how Onyx turns ranked work into a clearer daily plan. The hard part was deciding which tradeoffs should stay visible to the founder.
+Hook: Building Onyx is forcing me to make real tradeoffs instead of collecting ideas.
+
+2. [Behind the scenes] The Laser Workshop
+Prompt: Behind the scenes on The Laser Workshop: interviewing laser shops about quoting friction keeps revealing hidden operational pain. The messy part nobody sees is deciding what to fix first.
+Hook: The visible output of The Laser Workshop is usually the easy part.
+```
+
+Example `/week` section:
+
+```md
+## Content Prompts
+
+1. [Story] Onyx
+Prompt: A real story from this week in Onyx: refining the daily planning workflow changed how I think about founder-facing software. It started with trying to make priorities feel less passive.
+Hook: The interesting part of building Onyx is how often the plan changes once the work starts.
+
+2. [Founder reflection] Unbrella
+Prompt: Founder reflection from Unbrella: privacy-first UX only works when the product feels simpler, not more ideological. I'm rethinking what trust should look like inside a weather app.
+Hook: The longer I build, the more I realize leverage comes from better judgment, not more motion.
+```
+
+Example `ideas` mode section:
+
+```md
+## Content Prompts
+
+1. [Problem/Solution] The Laser Workshop
+Prompt: I keep seeing the same problem in The Laser Workshop: laser shops lose time in custom quoting and follow-up. My current fix is testing a simpler intake flow with clearer defaults.
+Hook: A lot of product direction gets clearer once the underlying bottleneck is obvious.
+
+2. [Curiosity/question] Onyx
+Prompt: Question I'm exploring in Onyx: how much planning should an AI operator do before it starts hiding useful tradeoffs? Right now I suspect the answer is less than most productivity tools assume.
+Hook: I learn faster when I publish the open question before I have the polished answer.
+```
 
 ## Firestore usage in Onyx
 

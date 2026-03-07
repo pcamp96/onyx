@@ -1,4 +1,5 @@
 import type { PlannerSettings, PlannerWeekResult, RankedTask } from "@/lib/core/types";
+import { generateContentPrompts } from "@/lib/planner/content-prompts";
 import { deriveWarnings } from "@/lib/planner/rules";
 import { derivePrimaryFocus } from "@/lib/planner/rules";
 import { scoreTask } from "@/lib/planner/scoring";
@@ -23,15 +24,24 @@ export function buildWeekPlan(input: PlannerAggregateInput, settings: PlannerSet
     }));
 
   const warnings = [...new Set([...input.warnings, ...deriveWarnings(rankedPriorities, settings)])];
+  const primaryFocus = derivePrimaryFocus(rankedPriorities);
 
   return {
     weekStart: toIsoDate(startOfWeek(now)),
     weekEnd: toIsoDate(endOfWeek(now)),
     summary,
-    primaryFocus: derivePrimaryFocus(rankedPriorities),
+    primaryFocus,
     rankedPriorities,
     deadlineRisks: warnings,
     warnings,
+    contentPrompts: generateContentPrompts({
+      command: "week",
+      summary,
+      rankedTasks: rankedPriorities,
+      warnings,
+      articleEntries: input.articleEntries,
+      primaryFocus,
+    }),
     generatedAt: now.toISOString(),
   };
 }

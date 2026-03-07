@@ -3,6 +3,7 @@ import type {
   PlannerTodayResult,
   RankedTask,
 } from "@/lib/core/types";
+import { generateContentPrompts } from "@/lib/planner/content-prompts";
 import { derivePrimaryFocus, deriveWarnings } from "@/lib/planner/rules";
 import { scoreTask } from "@/lib/planner/scoring";
 import { summarizeArticles } from "@/lib/planner/normalizers";
@@ -25,14 +26,24 @@ export function buildTodayPlan(input: PlannerAggregateInput, settings: PlannerSe
       ...task,
       rank: index + 1,
     }));
+  const warnings = [...new Set([...input.warnings, ...deriveWarnings(rankedTasks, settings)])];
+  const primaryFocus = derivePrimaryFocus(rankedTasks);
 
   return {
     date: toIsoDate(now),
     summary,
     calendarConstraints: input.calendarEvents,
-    primaryFocus: derivePrimaryFocus(rankedTasks),
+    primaryFocus,
     rankedTasks,
-    warnings: [...new Set([...input.warnings, ...deriveWarnings(rankedTasks, settings)])],
+    warnings,
+    contentPrompts: generateContentPrompts({
+      command: "today",
+      summary,
+      rankedTasks,
+      warnings,
+      articleEntries: input.articleEntries,
+      primaryFocus,
+    }),
     generatedAt: now.toISOString(),
   };
 }

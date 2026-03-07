@@ -3,8 +3,7 @@ export type IntegrationProvider =
   | "asana"
   | "todoist"
   | "google-sheets"
-  | "google-calendar"
-  | "apple-calendar";
+  | "calendar";
 
 export interface AuditFields {
   createdAt: string;
@@ -63,6 +62,20 @@ export interface EncryptedSecretRecord {
   version: string;
   updatedAt: string;
   updatedBy: string;
+}
+
+export interface GptApiCredentialRecord {
+  id: string;
+  userId: string;
+  label: string;
+  tokenHash: string;
+  tokenLastFour: string;
+  status: "active" | "revoked";
+  createdAt: string;
+  updatedAt: string;
+  updatedBy: string;
+  lastUsedAt?: string;
+  revokedAt?: string;
 }
 
 export interface IntegrationConfigRecord extends AuditFields {
@@ -158,7 +171,7 @@ export interface NormalizedTask {
 
 export interface NormalizedCalendarEvent {
   id: string;
-  source: "google-calendar" | "apple-calendar";
+  source: "calendar";
   sourceId: string;
   sourceUrl?: string;
   title: string;
@@ -219,6 +232,27 @@ export interface PlannerSummary {
   estimatedPaySoFar?: number;
 }
 
+export type ContentPromptCategory =
+  | "Story"
+  | "Opinion"
+  | "Lesson"
+  | "Behind the scenes"
+  | "Build in public"
+  | "Problem/Solution"
+  | "Progress update"
+  | "Curiosity/question"
+  | "Vision"
+  | "Founder reflection";
+
+export type ContentPromptCommand = "today" | "week" | "ideas" | "stats";
+
+export interface ContentPrompt {
+  category: ContentPromptCategory;
+  project: string;
+  prompt: string;
+  hook: string;
+}
+
 export interface PlannerTodayResult {
   date: string;
   summary: PlannerSummary;
@@ -226,6 +260,7 @@ export interface PlannerTodayResult {
   primaryFocus: string;
   rankedTasks: RankedTask[];
   warnings: string[];
+  contentPrompts: ContentPrompt[];
   generatedAt?: string;
 }
 
@@ -237,7 +272,43 @@ export interface PlannerWeekResult {
   rankedPriorities: RankedTask[];
   deadlineRisks: string[];
   warnings: string[];
+  contentPrompts: ContentPrompt[];
   generatedAt?: string;
+}
+
+export interface GptInstructionTemplateInput {
+  baseUrl: string;
+  schemaUrl: string;
+  authHeaderName: string;
+  authTypeLabel: string;
+  authNotes: string;
+  timezone: string;
+  displayName?: string;
+}
+
+export interface GptSetupData {
+  baseUrl: string;
+  schemaUrl: string;
+  schemaYamlUrl: string;
+  authType: string;
+  authHeaderName: string;
+  authNotes: string;
+  actionInstructions: string;
+  actionSchemaJson: string;
+  actionSchemaYaml: string;
+  instructions: string;
+  conversationStarters: string[];
+  checklist: string[];
+  sampleTodayResponse: PlannerTodayResult;
+  credential: {
+    label: string;
+    status: "active" | "revoked" | "missing";
+    tokenLastFour?: string;
+    createdAt?: string;
+    updatedAt?: string;
+    lastUsedAt?: string;
+    revokedAt?: string;
+  };
 }
 
 export interface PlanningSnapshot {
@@ -256,6 +327,7 @@ export interface PlanningSnapshot {
     "id" | "source" | "sourceId" | "sourceUrl" | "area" | "title" | "status" | "dueDate" | "isOverdue" | "isBlocked" | "score" | "rank" | "reason" | "scoreBreakdown"
   >[];
   warnings: string[];
+  contentPrompts: ContentPrompt[];
   createdAt: string;
   generatedAt?: string;
 }
