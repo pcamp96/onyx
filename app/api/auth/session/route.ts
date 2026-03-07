@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { NextRequest } from "next/server";
 
-import { SESSION_COOKIE_NAME } from "@/lib/config/constants";
+import { SESSION_COOKIE_NAME } from "@/lib/core/constants";
 import { createSessionCookie } from "@/lib/firebase/auth";
 import { badRequest, ok, serverError } from "@/lib/utils/http";
 

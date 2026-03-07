@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { getAuth } from "firebase-admin/auth";
 
-import { SESSION_COOKIE_NAME } from "@/lib/config/constants";
+import { SESSION_COOKIE_NAME } from "@/lib/core/constants";
 import { getFirebaseAdminApp } from "@/lib/firebase/admin";
 
 export async function createSessionCookie(idToken: string) {

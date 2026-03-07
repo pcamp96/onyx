@@ -1,4 +1,4 @@
-import { FOUNDER_USER_ID } from "@/lib/config/constants";
+import { FOUNDER_USER_ID } from "@/lib/core/constants";
 import type {
   IntegrationProvider,
   PlannerTodayResult,

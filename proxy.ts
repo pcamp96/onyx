@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-import { SESSION_COOKIE_NAME } from "@/lib/config/constants";
+import { SESSION_COOKIE_NAME } from "@/lib/core/constants";
 
 const PUBLIC_PATHS = ["/login", "/health", "/api/auth/session", "/api/auth/logout"];
 

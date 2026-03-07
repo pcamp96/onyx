@@ -1,4 +1,4 @@
-import { PROVIDERS } from "@/lib/config/constants";
+import { PROVIDERS } from "@/lib/core/constants";
 import type {
   GoogleSheetConfig,
   IntegrationConfigRecord,

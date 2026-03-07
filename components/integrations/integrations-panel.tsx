@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 
 import type { GoogleSheetConfig, IntegrationProvider, IntegrationRecord } from "@/lib/core/types";
-import { PROVIDER_LABELS } from "@/lib/config/constants";
+import { PROVIDER_LABELS } from "@/lib/core/constants";
 
 type Props = {
   integrations: IntegrationRecord[];

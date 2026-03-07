@@ -1,4 +1,4 @@
-import { DEFAULT_PLANNER_SETTINGS } from "@/lib/config/constants";
+import { DEFAULT_PLANNER_SETTINGS } from "@/lib/core/constants";
 import type { PlannerSettings } from "@/lib/core/types";
 import { getDb } from "@/lib/firebase/firestore";
 import { nowIso, toPlainObject } from "@/lib/firebase/repositories/base";

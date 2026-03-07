@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 
-import { SESSION_COOKIE_NAME } from "@/lib/config/constants";
+import { SESSION_COOKIE_NAME } from "@/lib/core/constants";
 import { getSessionUser } from "@/lib/firebase/auth";
 
 export async function requireApiSession() {
