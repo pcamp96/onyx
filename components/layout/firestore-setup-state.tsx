@@ -1,3 +1,7 @@
+import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@/components/ui/page-header";
+import { SectionCard } from "@/components/ui/section-card";
+
 type Props = {
   title: string;
   message: string;
@@ -5,19 +9,23 @@ type Props = {
 
 export function FirestoreSetupState({ title, message }: Props) {
   return (
-    <section className="rounded-[2rem] border border-amber-300 bg-amber-50 p-8 shadow-lg">
-      <p className="text-xs uppercase tracking-[0.4em] text-amber-800">Setup required</p>
-      <h2 className="mt-3 text-3xl font-semibold text-stone-950">{title}</h2>
-      <p className="mt-4 max-w-3xl text-sm leading-6 text-stone-700">{message}</p>
-      <div className="mt-6 rounded-3xl border border-amber-200 bg-white/70 p-5 text-sm text-stone-700">
-        <p className="font-semibold text-stone-950">What to verify</p>
-        <ul className="mt-3 space-y-2">
-          <li>Firestore API is enabled for the same Firebase project as your service account.</li>
-          <li>A Firestore database exists in that project.</li>
-          <li>Your service account belongs to the same project in `.env.local`.</li>
-          <li>If Firestore was just enabled, wait a couple of minutes and refresh.</li>
-        </ul>
-      </div>
-    </section>
+    <div className="space-y-6">
+      <PageHeader
+        title="Setup required"
+        description="Onyx can render the admin surface, but Firestore is not ready for the requested data."
+      />
+      <SectionCard>
+        <EmptyState title={title} description={message} />
+        <div className="mt-5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-stone-700">
+          <p className="font-medium text-stone-950">What to verify</p>
+          <ul className="mt-3 space-y-2 leading-6">
+            <li>Firestore API is enabled for the same Firebase project as your service account.</li>
+            <li>A Firestore database exists in that project.</li>
+            <li>Your service account belongs to the same project in `.env.local`.</li>
+            <li>If Firestore was just enabled, wait a couple of minutes and refresh.</li>
+          </ul>
+        </div>
+      </SectionCard>
+    </div>
   );
 }

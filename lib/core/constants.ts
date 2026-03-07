@@ -28,6 +28,8 @@ export const DEFAULT_PLANNER_SETTINGS: PlannerSettings = {
   timezone: "America/Chicago",
   workdays: [1, 2, 3, 4, 5, 6],
   sundayNoWork: true,
+  calendarEventHandling: "all_busy",
+  calendarOwnerIdentifiers: [],
   areaWeights: DEFAULT_AREA_WEIGHTS,
   createdAt: "",
   updatedAt: "",

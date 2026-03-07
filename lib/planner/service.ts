@@ -16,6 +16,7 @@ import { sponsorProjectsRepository } from "@/lib/firebase/repositories/sponsor-p
 import { getIntegrationAdapter } from "@/lib/integrations/registry";
 import { buildTodayPlan } from "@/lib/planner/today";
 import { buildWeekPlan } from "@/lib/planner/week";
+import { getBlockingCalendarEvents } from "@/lib/planner/calendar";
 import type { PlannerAggregateInput } from "@/lib/planner/types";
 import { decryptIntegrationSecret } from "@/lib/security/secrets";
 
@@ -160,7 +161,8 @@ export async function getTodayPlan(now = new Date(), userId = FOUNDER_USER_ID): 
     plannerSettingsRepository.get(userId),
     syncEnabledIntegrations(now, userId),
   ]);
-  const result = buildTodayPlan(aggregate, settings, now);
+  const calendarEvents = getBlockingCalendarEvents(aggregate.calendarEvents, settings);
+  const result = buildTodayPlan({ ...aggregate, calendarEvents }, settings, now);
 
   await Promise.all([
     planningSnapshotsRepository.save(userId, {
@@ -184,7 +186,8 @@ export async function getWeekPlan(now = new Date(), userId = FOUNDER_USER_ID): P
     plannerSettingsRepository.get(userId),
     syncEnabledIntegrations(now, userId),
   ]);
-  const result = buildWeekPlan(aggregate, settings, now);
+  const calendarEvents = getBlockingCalendarEvents(aggregate.calendarEvents, settings);
+  const result = buildWeekPlan({ ...aggregate, calendarEvents }, settings, now);
 
   await Promise.all([
     planningSnapshotsRepository.save(userId, {
@@ -192,7 +195,7 @@ export async function getWeekPlan(now = new Date(), userId = FOUNDER_USER_ID): P
       date: result.weekStart,
       summary: result.summary,
       primaryFocus: result.primaryFocus,
-      calendarConstraints: compactCalendarConstraints(aggregate.calendarEvents),
+      calendarConstraints: compactCalendarConstraints(calendarEvents),
       rankedTasks: compactRankedTasks(result.rankedPriorities),
       warnings: result.warnings,
       generatedAt: result.generatedAt,

@@ -4,6 +4,9 @@ import { useState, useTransition } from "react";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { useRouter } from "next/navigation";
 
+import { Button } from "@/components/ui/button";
+import { FormField } from "@/components/ui/form-field";
+import { Input } from "@/components/ui/input";
 import { getFirebaseClient } from "@/lib/firebase/client";
 
 type Props = {
@@ -56,34 +59,26 @@ export function LoginForm({ firebaseConfig }: Props) {
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
-      <label className="block">
-        <span className="mb-2 block text-sm font-medium text-stone-700">Email</span>
-        <input
+      <FormField label="Email">
+        <Input
           type="email"
           value={email}
           onChange={(event) => setEmail(event.target.value)}
-          className="w-full rounded-2xl border border-stone-300 bg-white px-4 py-3 outline-none transition focus:border-stone-900"
           required
         />
-      </label>
-      <label className="block">
-        <span className="mb-2 block text-sm font-medium text-stone-700">Password</span>
-        <input
+      </FormField>
+      <FormField label="Password">
+        <Input
           type="password"
           value={password}
           onChange={(event) => setPassword(event.target.value)}
-          className="w-full rounded-2xl border border-stone-300 bg-white px-4 py-3 outline-none transition focus:border-stone-900"
           required
         />
-      </label>
-      {error ? <p className="text-sm text-red-700">{error}</p> : null}
-      <button
-        type="submit"
-        disabled={isPending}
-        className="w-full rounded-full bg-stone-950 px-5 py-3 text-sm font-semibold text-stone-50 transition hover:bg-stone-800 disabled:opacity-60"
-      >
+      </FormField>
+      {error ? <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p> : null}
+      <Button type="submit" disabled={isPending} className="w-full">
         {isPending ? "Signing in..." : "Sign in"}
-      </button>
+      </Button>
     </form>
   );
 }

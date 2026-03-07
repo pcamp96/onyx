@@ -1,7 +1,20 @@
 import * as ical from "node-ical";
 
+import { IntegrationRequestError } from "@/lib/integrations/errors";
 import type { NormalizedCalendarEvent } from "@/lib/core/types";
 import type { IntegrationAdapter, IntegrationSyncResult, SyncContext } from "@/lib/integrations/interfaces";
+
+function readMailto(value: unknown) {
+  if (typeof value === "string") {
+    return value.replace(/^mailto:/i, "");
+  }
+
+  if (value && typeof value === "object" && "val" in value && typeof (value as { val?: unknown }).val === "string") {
+    return (value as { val: string }).val.replace(/^mailto:/i, "");
+  }
+
+  return undefined;
+}
 
 function toEvent(event: ical.VEvent): NormalizedCalendarEvent {
   const rawUrl = event.url as unknown;
@@ -31,6 +44,7 @@ function toEvent(event: ical.VEvent): NormalizedCalendarEvent {
     allDay: Boolean(event.datetype === "date"),
     isBusy: true,
     calendarName: "Apple Calendar",
+    organizerEmail: readMailto((event as unknown as { organizer?: unknown }).organizer),
     sourceUrl,
   };
 }
@@ -49,18 +63,53 @@ export class AppleCalendarAdapter implements IntegrationAdapter {
   }
 
   async sync(context: SyncContext): Promise<IntegrationSyncResult> {
-    const url =
-      context.config && typeof (context.config as Record<string, unknown>).icsUrl === "string"
-        ? ((context.config as Record<string, unknown>).icsUrl as string)
-        : null;
-    if (!url) {
-      throw new Error("Apple Calendar ICS URL is missing");
+    const config = (context.config ?? {}) as Record<string, unknown>;
+    const urls = Array.isArray(config.icsUrls)
+      ? config.icsUrls
+          .filter((value): value is string => typeof value === "string")
+          .map((value) => value.trim())
+          .filter(Boolean)
+      : typeof config.icsUrl === "string" && config.icsUrl.trim()
+        ? [config.icsUrl.trim()]
+        : [];
+
+    if (!urls.length) {
+      throw new IntegrationRequestError("Apple Calendar needs at least one ICS URL");
     }
 
-    const parsed = await ical.async.fromURL(url);
-    const calendarEvents = Object.values(parsed)
-      .filter((entry): entry is ical.VEvent => Boolean(entry) && (entry as ical.VEvent).type === "VEVENT")
-      .map(toEvent)
+    try {
+      urls.forEach((url) => {
+        new URL(url);
+      });
+    } catch {
+      throw new IntegrationRequestError("Apple Calendar ICS URLs must be valid URLs");
+    }
+
+    const feeds = await Promise.all(
+      urls.map(async (url) => {
+        try {
+          return await ical.async.fromURL(url);
+        } catch (error) {
+          throw new IntegrationRequestError(error instanceof Error ? error.message : "Apple Calendar request failed");
+        }
+      }),
+    );
+
+    const seenIds = new Set<string>();
+    const calendarEvents = feeds
+      .flatMap((parsed) =>
+        Object.values(parsed)
+          .filter((entry): entry is ical.VEvent => Boolean(entry) && (entry as ical.VEvent).type === "VEVENT")
+          .map(toEvent)
+          .filter((event) => {
+            if (seenIds.has(event.id)) {
+              return false;
+            }
+
+            seenIds.add(event.id);
+            return true;
+          }),
+      )
       .sort((left, right) => left.start.localeCompare(right.start));
 
     return {
@@ -68,7 +117,7 @@ export class AppleCalendarAdapter implements IntegrationAdapter {
       calendarEvents,
       articleEntries: [],
       warnings: [],
-      rawPreview: { count: calendarEvents.length },
+      rawPreview: { count: calendarEvents.length, icsUrls: urls },
     };
   }
 }

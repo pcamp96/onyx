@@ -31,6 +31,8 @@ export interface PlannerSettings extends AuditFields {
   timezone: string;
   workdays: number[];
   sundayNoWork: boolean;
+  calendarEventHandling: "all_busy" | "owned_only";
+  calendarOwnerIdentifiers: string[];
   areaWeights: Record<WorkArea, number>;
 }
 
@@ -72,16 +74,23 @@ export interface IntegrationConfigRecord extends AuditFields {
 export interface GoogleSheetColumnMapping {
   submitted_at: string;
   title: string;
+  source_url?: string;
   word_count?: string;
   pay?: string;
   status?: string;
   outlet?: string;
 }
 
+export type GoogleSheetLayout = "table" | "weekly_grid";
+
 export interface GoogleSheetConfig {
   spreadsheetId: string;
   worksheetName: string;
   sourceUrl?: string;
+  layout?: GoogleSheetLayout;
+  headerRow?: number;
+  dataStartRow?: number;
+  weekStartDate?: string;
   columnMapping: GoogleSheetColumnMapping;
 }
 
@@ -156,6 +165,11 @@ export interface NormalizedCalendarEvent {
   allDay: boolean;
   isBusy: boolean;
   calendarName?: string;
+  organizerEmail?: string;
+  organizerName?: string;
+  creatorEmail?: string;
+  selfAttendee?: boolean;
+  responseStatus?: string;
 }
 
 export interface NormalizedArticleEntry {

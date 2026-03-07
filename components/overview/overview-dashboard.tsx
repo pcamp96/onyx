@@ -1,4 +1,8 @@
 import type { PlanningSnapshot } from "@/lib/core/types";
+import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@/components/ui/page-header";
+import { SectionCard } from "@/components/ui/section-card";
+import { StatusBadge } from "@/components/ui/status-badge";
 
 type Props = {
   today: PlanningSnapshot | null;
@@ -6,77 +10,109 @@ type Props = {
 };
 
 export function OverviewDashboard({ today, week }: Props) {
+  const summaryCards = [
+    { label: "Submitted this week", value: today?.summary.articlesSubmittedThisWeek ?? 0 },
+    { label: "Remaining to minimum", value: today?.summary.remainingToMinimum ?? 0 },
+    { label: "Remaining to goal", value: today?.summary.remainingToGoal ?? 0 },
+    { label: "Calendar constraints", value: today?.calendarConstraints.length ?? 0 },
+  ];
+
   return (
     <div className="space-y-6">
-      <section className="rounded-[2rem] border border-stone-900/10 bg-white/80 p-8 shadow-lg backdrop-blur">
-        <p className="text-xs uppercase tracking-[0.4em] text-stone-500">Today</p>
-        <h2 className="mt-3 text-4xl font-semibold text-stone-950">{today?.primaryFocus ?? "No plan yet"}</h2>
-        <p className="mt-3 max-w-2xl text-sm leading-6 text-stone-600">
-          Onyx ranks execution, not time blocks. Pull `/today` to refresh the latest priority order.
-        </p>
-        <div className="mt-8 grid gap-4 md:grid-cols-4">
-          <SummaryCard label="Submitted this week" value={today?.summary.articlesSubmittedThisWeek ?? 0} />
-          <SummaryCard label="Remaining to minimum" value={today?.summary.remainingToMinimum ?? 0} />
-          <SummaryCard label="Remaining to goal" value={today?.summary.remainingToGoal ?? 0} />
-          <SummaryCard label="Calendar constraints" value={today?.calendarConstraints.length ?? 0} />
-        </div>
-      </section>
-      <section className="grid gap-6 xl:grid-cols-[1.7fr_1fr]">
-        <div className="rounded-[2rem] border border-stone-900/10 bg-white/75 p-8 shadow-lg backdrop-blur">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xl font-semibold text-stone-950">Latest ranked output</h3>
-            <span className="text-sm text-stone-500">{today?.date ?? "No snapshot"}</span>
+      <PageHeader
+        title="Overview"
+        description="A compact view of current execution pressure, weekly pacing, and the latest ranked output."
+      />
+      <SectionCard>
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-3xl">
+            <p className="text-xs font-medium uppercase tracking-[0.16em] text-stone-500">Today</p>
+            <h2 className="mt-2 text-2xl font-semibold tracking-tight text-stone-950">
+              {today?.primaryFocus ?? "No plan available yet"}
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-stone-600">
+              Onyx ranks execution pressure rather than time blocks. Refresh `/today` to update the latest priority ordering.
+            </p>
           </div>
-          <div className="mt-6 space-y-4">
-            {today?.rankedTasks.map((task) => (
-              <div key={task.id} className="rounded-3xl border border-stone-200 bg-stone-50 p-5">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.3em] text-stone-500">{task.area}</p>
-                    <h4 className="mt-2 text-lg font-semibold text-stone-950">{task.title}</h4>
-                    <p className="mt-2 text-sm text-stone-600">{task.reason}</p>
-                  </div>
-                  <div className="rounded-full bg-stone-950 px-4 py-2 text-sm font-semibold text-stone-50">
-                    {task.score}
-                  </div>
-                </div>
-              </div>
-            )) ?? <p className="text-sm text-stone-500">No ranked tasks yet.</p>}
-          </div>
+          <StatusBadge label={today?.date ?? "No snapshot"} tone={today ? "success" : "warning"} />
         </div>
+        <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {summaryCards.map((item) => (
+            <SummaryCard key={item.label} label={item.label} value={item.value} />
+          ))}
+        </div>
+      </SectionCard>
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(18rem,0.9fr)]">
+        <SectionCard
+          title="Latest ranked output"
+          description="Current task ordering based on urgency, weekly pace, and available execution capacity."
+        >
+          {today?.rankedTasks?.length ? (
+            <div className="space-y-3">
+              {today.rankedTasks.map((task) => (
+                <article key={task.id} className="rounded-lg border border-stone-200 bg-stone-50 px-4 py-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-xs font-medium uppercase tracking-[0.14em] text-stone-500">
+                          {task.area}
+                        </span>
+                        <span className="text-xs text-stone-400">#{task.rank}</span>
+                        {task.isOverdue ? <StatusBadge label="Overdue" tone="error" /> : null}
+                        {task.isBlocked ? <StatusBadge label="Blocked" tone="warning" /> : null}
+                      </div>
+                      <h3 className="mt-2 text-sm font-semibold text-stone-950">{task.title}</h3>
+                      <p className="mt-2 text-sm leading-6 text-stone-600">{task.reason}</p>
+                    </div>
+                    <div className="shrink-0 rounded-md border border-stone-200 bg-white px-3 py-2 text-sm font-semibold text-stone-950">
+                      {task.score}
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+              title="No ranked tasks yet"
+              description="Run the planner so Onyx can surface current priorities and execution risks."
+            />
+          )}
+        </SectionCard>
         <div className="space-y-6">
-          <section className="rounded-[2rem] border border-stone-900/10 bg-white/80 p-8 shadow-lg backdrop-blur">
-            <h3 className="text-xl font-semibold text-stone-950">Top warnings</h3>
-            <ul className="mt-4 space-y-3 text-sm text-stone-700">
+          <SectionCard title="Warnings" description="Signals that need attention before the next planning cycle.">
+            <ul className="space-y-3 text-sm text-stone-700">
               {(today?.warnings.length ? today.warnings : ["No active warnings."]).map((warning) => (
-                <li key={warning} className="rounded-2xl bg-stone-100 px-4 py-3">
+                <li key={warning} className="rounded-md border border-stone-200 bg-stone-50 px-4 py-3">
                   {warning}
                 </li>
               ))}
             </ul>
-          </section>
-          <section className="rounded-[2rem] border border-stone-900/10 bg-stone-950 p-8 text-stone-50 shadow-lg">
-            <h3 className="text-xl font-semibold">Week summary</h3>
-            <p className="mt-3 text-sm text-stone-300">
-              {week ? `${week.summary.articlesSubmittedThisWeek} submitted this week.` : "No weekly snapshot yet."}
-            </p>
-            <div className="mt-6 space-y-2 text-sm text-stone-300">
-              <p>Remaining to minimum: {week?.summary.remainingToMinimum ?? 0}</p>
-              <p>Remaining to goal: {week?.summary.remainingToGoal ?? 0}</p>
-              <p>Weekly priorities: {week?.rankedTasks.length ?? 0}</p>
+          </SectionCard>
+          <SectionCard title="Week summary" description="How this week is pacing against publishing targets.">
+            <div className="space-y-4">
+              <p className="text-sm text-stone-600">
+                {week ? `${week.summary.articlesSubmittedThisWeek} articles submitted this week.` : "No weekly snapshot yet."}
+              </p>
+              <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
+                <SummaryCard label="Remaining to minimum" value={week?.summary.remainingToMinimum ?? 0} compact />
+                <SummaryCard label="Remaining to goal" value={week?.summary.remainingToGoal ?? 0} compact />
+                <SummaryCard label="Weekly priorities" value={week?.rankedTasks.length ?? 0} compact />
+              </div>
             </div>
-          </section>
+          </SectionCard>
         </div>
-      </section>
+      </div>
     </div>
   );
 }
 
-function SummaryCard({ label, value }: { label: string; value: number }) {
+function SummaryCard({ label, value, compact = false }: { label: string; value: number; compact?: boolean }) {
   return (
-    <div className="rounded-3xl border border-stone-200 bg-stone-50 p-5">
-      <p className="text-xs uppercase tracking-[0.3em] text-stone-500">{label}</p>
-      <p className="mt-3 text-3xl font-semibold text-stone-950">{value}</p>
+    <div className="rounded-lg border border-stone-200 bg-stone-50 px-4 py-4">
+      <p className="text-xs font-medium uppercase tracking-[0.14em] text-stone-500">{label}</p>
+      <p className={compact ? "mt-2 text-xl font-semibold text-stone-950" : "mt-2 text-2xl font-semibold text-stone-950"}>
+        {value}
+      </p>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { PlannerSettings } from "@/lib/core/types";
+import { getBlockingCalendarEvents } from "@/lib/planner/calendar";
 import { buildTodayPlan } from "@/lib/planner/today";
 
 const settings: PlannerSettings = {
@@ -13,6 +14,8 @@ const settings: PlannerSettings = {
   timezone: "America/Chicago",
   workdays: [1, 2, 3, 4, 5],
   sundayNoWork: true,
+  calendarEventHandling: "all_busy",
+  calendarOwnerIdentifiers: [],
   areaWeights: {
     HTG: 40,
     TLW: 28,
@@ -119,5 +122,44 @@ describe("today planner", () => {
 
     expect(plan.rankedTasks[0]?.area).toBe("CREATED_WORKSHOP");
     expect(plan.warnings[0]).toContain("Sponsor");
+  });
+
+  it("can block only owned calendar appointments", () => {
+    const blockingEvents = getBlockingCalendarEvents(
+      [
+        {
+          id: "event-1",
+          source: "google-calendar",
+          sourceId: "event-1",
+          title: "Team standup",
+          start: "2026-03-06T15:00:00.000Z",
+          end: "2026-03-06T15:30:00.000Z",
+          allDay: false,
+          isBusy: true,
+          organizerEmail: "ops@example.com",
+        },
+        {
+          id: "event-2",
+          source: "google-calendar",
+          sourceId: "event-2",
+          title: "Patrick dentist appointment",
+          start: "2026-03-06T18:00:00.000Z",
+          end: "2026-03-06T19:00:00.000Z",
+          allDay: false,
+          isBusy: true,
+          organizerEmail: "patrick@patrickcampanale.com",
+          selfAttendee: true,
+          responseStatus: "accepted",
+        },
+      ],
+      {
+        ...settings,
+        calendarEventHandling: "owned_only",
+        calendarOwnerIdentifiers: ["patrick@patrickcampanale.com", "Patrick"],
+      },
+    );
+
+    expect(blockingEvents).toHaveLength(1);
+    expect(blockingEvents[0]?.id).toBe("event-2");
   });
 });

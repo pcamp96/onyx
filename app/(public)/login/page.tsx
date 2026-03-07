@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 
 import { LoginForm } from "@/components/auth/login-form";
+import { PageHeader } from "@/components/ui/page-header";
+import { SectionCard } from "@/components/ui/section-card";
 import { getOptionalFirebaseClientEnv } from "@/lib/config/env";
 import { getSessionUser } from "@/lib/firebase/auth";
 
@@ -13,38 +15,38 @@ export default async function LoginPage() {
   const firebaseConfig = getOptionalFirebaseClientEnv();
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,_#f0e6d3,_#e2d3bb_45%,_#cdbb9f)] px-6">
-      <div className="grid w-full max-w-5xl gap-8 lg:grid-cols-[1.1fr_0.9fr]">
-        <section className="rounded-[2.5rem] border border-stone-900/10 bg-stone-950 p-10 text-stone-50 shadow-2xl">
-          <p className="text-xs uppercase tracking-[0.5em] text-stone-400">Onyx</p>
-          <h1 className="mt-5 max-w-lg text-5xl font-semibold leading-tight">
-            Ranked execution lists, not hour-by-hour planning.
-          </h1>
-          <p className="mt-6 max-w-xl text-base leading-7 text-stone-300">
-            Onyx uses tasks, article pace, and calendar constraints to answer what must happen today and what can wait.
-          </p>
-        </section>
-        <section className="rounded-[2.5rem] border border-stone-900/10 bg-white/85 p-10 shadow-2xl backdrop-blur">
-          <p className="text-xs uppercase tracking-[0.4em] text-stone-500">Admin access</p>
-          {firebaseConfig ? (
-            <>
-              <h2 className="mt-3 text-3xl font-semibold text-stone-950">Sign in</h2>
-              <p className="mt-3 text-sm leading-6 text-stone-600">
-                Use your Firebase email/password admin account. Session cookies secure all founder routes.
-              </p>
-              <div className="mt-8">
-                <LoginForm firebaseConfig={firebaseConfig} />
-              </div>
-            </>
-          ) : (
-            <>
-              <h2 className="mt-3 text-3xl font-semibold text-stone-950">Firebase setup required</h2>
-              <p className="mt-3 text-sm leading-6 text-stone-600">
-                Add the Firebase and encryption variables from `.env.example` to `.env.local`, then restart `npm run dev`.
-              </p>
-              <div className="mt-8 rounded-3xl border border-amber-300 bg-amber-50 p-5 text-sm text-stone-700">
-                <p className="font-semibold text-stone-900">Required before login works</p>
-                <ul className="mt-3 space-y-2">
+    <div className="min-h-screen bg-[var(--background)] px-4 py-10 sm:px-6">
+      <div className="mx-auto grid max-w-5xl gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(22rem,0.85fr)]">
+        <SectionCard className="bg-stone-950 text-stone-50">
+          <div className="space-y-6">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-[0.16em] text-stone-400">Onyx</p>
+              <h1 className="mt-3 max-w-xl text-3xl font-semibold tracking-tight">
+                Ranked execution lists for a serious founder operating cadence.
+              </h1>
+            </div>
+            <div className="space-y-3 text-sm leading-7 text-stone-300">
+              <p>Onyx turns tasks, publishing pace, and calendar constraints into a focused command surface.</p>
+              <p>The interface is designed for high-signal operational review, not generic dashboard theater.</p>
+            </div>
+          </div>
+        </SectionCard>
+        <SectionCard>
+          <PageHeader
+            title={firebaseConfig ? "Sign in" : "Firebase setup required"}
+            description={
+              firebaseConfig
+                ? "Use your Firebase email/password admin account. Session cookies protect the founder surfaces."
+                : "Add the required Firebase and encryption variables to `.env.local`, then restart the app."
+            }
+          />
+          <div className="mt-6">
+            {firebaseConfig ? (
+              <LoginForm firebaseConfig={firebaseConfig} />
+            ) : (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-stone-700">
+                <p className="font-medium text-stone-900">Required before login works</p>
+                <ul className="mt-3 space-y-2 leading-6">
                   <li>`FIREBASE_PROJECT_ID`</li>
                   <li>`FIREBASE_CLIENT_EMAIL`</li>
                   <li>`FIREBASE_PRIVATE_KEY`</li>
@@ -54,9 +56,9 @@ export default async function LoginPage() {
                   <li>`ONYX_ENCRYPTION_KEY`</li>
                 </ul>
               </div>
-            </>
-          )}
-        </section>
+            )}
+          </div>
+        </SectionCard>
       </div>
     </div>
   );
