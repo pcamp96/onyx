@@ -504,7 +504,7 @@ export function buildCanonicalOpenApiSpec() {
           operationId: "getFounderDailyPriorities",
           summary: "Get today's ranked execution priorities",
           description:
-            "Call this only when the user asks what to do today, what should happen first, or how to execute the current day. Preserve rankedTasks order exactly. Treat calendarConstraints as schedule limits, not as the planner. Use contentPrompts only when the user wants publishing or content ideas and the field is present.",
+            "Call this when the user asks what to do today or what should happen first. Preserve rankedTasks order exactly. Treat calendarConstraints as execution limits, not as the planner. Use contentPrompts only for content-related requests when they are present.",
           security: [{ OnyxApiKey: [] }],
           responses: {
             "200": {
