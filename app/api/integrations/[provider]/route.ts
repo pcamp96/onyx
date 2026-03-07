@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 
 import type { GoogleSheetConfig, IntegrationProvider } from "@/lib/core/types";
 import { integrationConfigsRepository, integrationsRepository } from "@/lib/firebase/repositories/integrations";
+import { toGoogleSheetConfig } from "@/lib/integrations/google-sheets/utils";
 import { requireApiSession } from "@/lib/utils/auth";
 import { ok, unauthorized } from "@/lib/utils/http";
 
@@ -37,7 +38,7 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ pro
   const body = await request.json();
 
   if (provider === "google-sheets" && body.googleSheetConfig) {
-    const googleSheetConfig = body.googleSheetConfig as GoogleSheetConfig;
+    const googleSheetConfig = toGoogleSheetConfig(body.googleSheetConfig as GoogleSheetConfig);
     const [integration, config] = await Promise.all([
       integrationsRepository.save(session.uid, provider, {
         updatedBy: session.uid,

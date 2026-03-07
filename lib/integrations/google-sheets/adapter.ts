@@ -1,15 +1,17 @@
 import { google } from "googleapis";
 
+import { IntegrationRequestError } from "@/lib/integrations/errors";
+import { parseGoogleServiceAccount, toGoogleIntegrationError } from "@/lib/integrations/google/utils";
 import type { GoogleSheetConfig } from "@/lib/core/types";
 import type { IntegrationAdapter, SyncContext, IntegrationSyncResult } from "@/lib/integrations/interfaces";
-import { extractSpreadsheetId, mapSheetRowsToArticles } from "@/lib/integrations/google-sheets/utils";
+import { extractSpreadsheetId, mapSheetRowsToArticles, toGoogleSheetConfig } from "@/lib/integrations/google-sheets/utils";
 
 function buildAuth(secret?: string | null) {
   if (!secret) {
     return undefined;
   }
 
-  const credentials = JSON.parse(secret) as { client_email: string; private_key: string };
+  const credentials = parseGoogleServiceAccount(secret, "Google Sheets service account secret");
   return new google.auth.GoogleAuth({
     credentials,
     scopes: ["https://www.googleapis.com/auth/spreadsheets.readonly"],
@@ -18,10 +20,10 @@ function buildAuth(secret?: string | null) {
 
 function assertConfig(config?: GoogleSheetConfig | Record<string, unknown> | null): GoogleSheetConfig {
   if (!config || typeof config !== "object") {
-    throw new Error("Google Sheets config is missing");
+    throw new IntegrationRequestError("Google Sheets config is missing");
   }
 
-  return config as unknown as GoogleSheetConfig;
+  return toGoogleSheetConfig(config as GoogleSheetConfig | Record<string, unknown>);
 }
 
 export class GoogleSheetsAdapter implements IntegrationAdapter {
@@ -40,26 +42,38 @@ export class GoogleSheetsAdapter implements IntegrationAdapter {
   async sync(context: SyncContext): Promise<IntegrationSyncResult> {
     const config = assertConfig(context.config);
     const spreadsheetId = extractSpreadsheetId(config.spreadsheetId || config.sourceUrl || "");
-    const auth = buildAuth(context.secret);
-    const sheets = google.sheets({ version: "v4", auth });
-    const range = `${config.worksheetName}!A:Z`;
-    const response = await sheets.spreadsheets.values.get({
-      spreadsheetId,
-      range,
-    });
-    const rows = (response.data.values ?? []) as string[][];
-    const articleEntries = mapSheetRowsToArticles(rows, config.columnMapping);
+    if (!spreadsheetId) {
+      throw new IntegrationRequestError("Google Sheets spreadsheetId is missing");
+    }
 
-    return {
-      tasks: [],
-      calendarEvents: [],
-      articleEntries,
-      warnings: [],
-      rawPreview: {
+    if (!config.worksheetName?.trim()) {
+      throw new IntegrationRequestError("Google Sheets worksheetName is missing");
+    }
+
+    const auth = buildAuth(context.secret);
+    try {
+      const sheets = google.sheets({ version: "v4", auth });
+      const range = `${config.worksheetName}!A:Z`;
+      const response = await sheets.spreadsheets.values.get({
         spreadsheetId,
-        worksheetName: config.worksheetName,
-        rowCount: rows.length,
-      },
-    };
+        range,
+      });
+      const rows = (response.data.values ?? []) as string[][];
+      const articleEntries = mapSheetRowsToArticles(rows, config);
+
+      return {
+        tasks: [],
+        calendarEvents: [],
+        articleEntries,
+        warnings: [],
+        rawPreview: {
+          spreadsheetId,
+          worksheetName: config.worksheetName,
+          rowCount: rows.length,
+        },
+      };
+    } catch (error) {
+      throw toGoogleIntegrationError(error, "Google Sheets request failed");
+    }
   }
 }
