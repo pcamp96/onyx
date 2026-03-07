@@ -1,10 +1,11 @@
 import type { IntegrationProvider } from "@/lib/core/types";
 import { integrationConfigsRepository, integrationsRepository } from "@/lib/firebase/repositories/integrations";
 import { secretsRepository } from "@/lib/firebase/repositories/secrets";
+import { getErrorStatus } from "@/lib/integrations/errors";
 import { getIntegrationAdapter } from "@/lib/integrations/registry";
 import { decryptIntegrationSecret } from "@/lib/security/secrets";
 import { requireApiSession } from "@/lib/utils/auth";
-import { ok, serverError, unauthorized } from "@/lib/utils/http";
+import { badRequest, ok, serverError, unauthorized } from "@/lib/utils/http";
 
 async function getConfig(userId: string, provider: IntegrationProvider) {
   const config = await integrationConfigsRepository.get(userId, provider);
@@ -42,6 +43,7 @@ export async function POST(_request: Request, context: { params: Promise<{ provi
 
     return ok(result);
   } catch (error) {
-    return serverError(error instanceof Error ? error.message : "Connection test failed");
+    const message = error instanceof Error ? error.message : "Connection test failed";
+    return getErrorStatus(error) < 500 ? badRequest(message) : serverError(message);
   }
 }

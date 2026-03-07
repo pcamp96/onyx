@@ -1,4 +1,5 @@
 import { isOverdue } from "@/lib/utils/time";
+import { IntegrationRequestError } from "@/lib/integrations/errors";
 import type { IntegrationAdapter, IntegrationSyncResult, SyncContext } from "@/lib/integrations/interfaces";
 
 function pickArea(projectName?: string) {
@@ -30,27 +31,34 @@ export class AsanaAdapter implements IntegrationAdapter {
 
   async sync(context: SyncContext): Promise<IntegrationSyncResult> {
     if (!context.secret) {
-      throw new Error("Asana API token is missing");
+      throw new IntegrationRequestError("Asana API token is missing");
     }
 
-    const workspaceId =
+    const configuredWorkspaceId =
       context.config && typeof (context.config as Record<string, unknown>).workspaceId === "string"
-        ? ((context.config as Record<string, unknown>).workspaceId as string)
+        ? ((context.config as Record<string, unknown>).workspaceId as string).trim()
         : undefined;
-    const response = await fetch("https://app.asana.com/api/1.0/tasks?assignee=me&opt_fields=name,due_on,completed,projects.name", {
-      headers: {
-        Authorization: `Bearer ${context.secret}`,
-      },
-      cache: "no-store",
-    });
+    const me = await this.fetchAsana<{
+      data?: {
+        gid: string;
+        workspaces?: Array<{ gid: string; name: string }>;
+      };
+    }>("https://app.asana.com/api/1.0/users/me?opt_fields=workspaces.gid,workspaces.name", context.secret);
+    const workspaces = me.data?.workspaces ?? [];
+    const workspaceId = configuredWorkspaceId || workspaces[0]?.gid;
 
-    if (!response.ok) {
-      throw new Error(`Asana request failed with ${response.status}`);
+    if (!workspaceId) {
+      throw new IntegrationRequestError("Asana workspace ID is missing. Save a workspace ID or use a token with at least one accessible workspace.");
     }
 
-    const payload = (await response.json()) as {
+    const params = new URLSearchParams({
+      assignee: "me",
+      workspace: workspaceId,
+      opt_fields: "name,due_on,completed,projects.name",
+    });
+    const payload = await this.fetchAsana<{
       data?: Array<{ gid: string; name: string; due_on?: string; completed?: boolean; projects?: Array<{ name: string }> }>;
-    };
+    }>(`https://app.asana.com/api/1.0/tasks?${params.toString()}`, context.secret);
 
     const tasks = (payload.data ?? []).map((task) => {
       const dueAt = task.due_on ? `${task.due_on}T17:00:00.000Z` : undefined;
@@ -76,8 +84,36 @@ export class AsanaAdapter implements IntegrationAdapter {
       tasks,
       calendarEvents: [],
       articleEntries: [],
-      warnings: [],
-      rawPreview: { count: tasks.length },
+      warnings: configuredWorkspaceId ? [] : ["Using the first accessible Asana workspace because no workspace ID is configured."],
+      rawPreview: { count: tasks.length, workspaceId },
     };
+  }
+
+  private async fetchAsana<T>(url: string, secret: string): Promise<T> {
+    const response = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${secret}`,
+      },
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      const message = await this.readAsanaError(response);
+      throw new IntegrationRequestError(message, response.status);
+    }
+
+    return (await response.json()) as T;
+  }
+
+  private async readAsanaError(response: Response) {
+    try {
+      const payload = (await response.json()) as {
+        errors?: Array<{ message?: string }>;
+      };
+      const message = payload.errors?.map((error) => error.message).filter(Boolean).join("; ");
+      return message || `Asana request failed with ${response.status}`;
+    } catch {
+      return `Asana request failed with ${response.status}`;
+    }
   }
 }
