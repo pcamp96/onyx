@@ -5,7 +5,7 @@ import { nowIso, toPlainObject, userDocument } from "@/lib/firebase/repositories
 const SUBCOLLECTION = "integration_secrets";
 
 function secretRef(userId: string, provider: IntegrationProvider) {
-  return userDocument(userId).collection(SUBCOLLECTION).doc(provider);
+  return userDocument(userId).collection<EncryptedSecretRecord>(SUBCOLLECTION).doc(provider);
 }
 
 export const secretsRepository = {
@@ -15,7 +15,7 @@ export const secretsRepository = {
       return null;
     }
 
-    return toPlainObject(snapshot.data() as EncryptedSecretRecord);
+    return toPlainObject(snapshot.data() as unknown as EncryptedSecretRecord);
   },
 
   async save(

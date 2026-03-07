@@ -6,7 +6,7 @@ const SUBCOLLECTION = "gpt_api_credentials";
 const DEFAULT_ID = "default";
 
 function credentialRef(userId: string) {
-  return userDocument(userId).collection(SUBCOLLECTION).doc(DEFAULT_ID);
+  return userDocument(userId).collection<GptApiCredentialRecord>(SUBCOLLECTION).doc(DEFAULT_ID);
 }
 
 export const gptApiCredentialsRepository = {
@@ -16,7 +16,7 @@ export const gptApiCredentialsRepository = {
       return null;
     }
 
-    return toPlainObject(snapshot.data() as GptApiCredentialRecord);
+    return toPlainObject(snapshot.data() as unknown as GptApiCredentialRecord);
   },
 
   async save(userId: string, input: Omit<GptApiCredentialRecord, "id" | "userId" | "createdAt" | "updatedAt">) {
@@ -65,7 +65,7 @@ export const gptApiCredentialsRepository = {
 
   async findByTokenHash(tokenHash: string): Promise<GptApiCredentialRecord | null> {
     const snapshot = await getDb()
-      .collectionGroup(SUBCOLLECTION)
+      .collectionGroup<GptApiCredentialRecord>(SUBCOLLECTION)
       .where("tokenHash", "==", tokenHash)
       .limit(1)
       .get();
@@ -75,6 +75,6 @@ export const gptApiCredentialsRepository = {
       return null;
     }
 
-    return toPlainObject(doc.data() as GptApiCredentialRecord);
+    return toPlainObject(doc.data() as unknown as GptApiCredentialRecord);
   },
 };

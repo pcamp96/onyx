@@ -6,16 +6,16 @@ const COLLECTION = "users";
 
 export const usersRepository = {
   async get(userId: string): Promise<UserProfile | null> {
-    const snapshot = await getDb().collection(COLLECTION).doc(userId).get();
+    const snapshot = await getDb().collection<Omit<UserProfile, "id">>(COLLECTION).doc(userId).get();
     if (!snapshot.exists) {
       return null;
     }
 
-    return { id: snapshot.id, ...toPlainObject(snapshot.data() as Omit<UserProfile, "id">) };
+    return { id: snapshot.id, ...toPlainObject(snapshot.data() as unknown as Omit<UserProfile, "id">) };
   },
 
   async upsert(userId: string, profile: Partial<UserProfile>) {
-    const ref = getDb().collection(COLLECTION).doc(userId);
+    const ref = getDb().collection<Omit<UserProfile, "id">>(COLLECTION).doc(userId);
     const existing = await ref.get();
     const payload = {
       email: profile.email ?? "",

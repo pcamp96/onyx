@@ -5,11 +5,11 @@ const SNAPSHOT_SUBCOLLECTION = "planning_snapshots";
 const DEBUG_SUBCOLLECTION = "planning_debug";
 
 function snapshotsCollection(userId: string) {
-  return userDocument(userId).collection(SNAPSHOT_SUBCOLLECTION);
+  return userDocument(userId).collection<PlanningSnapshot>(SNAPSHOT_SUBCOLLECTION);
 }
 
 function debugRef(userId: string, type: "today" | "week") {
-  return userDocument(userId).collection(DEBUG_SUBCOLLECTION).doc(type);
+  return userDocument(userId).collection<PlanningDebugRecord>(DEBUG_SUBCOLLECTION).doc(type);
 }
 
 export const planningSnapshotsRepository = {
@@ -36,7 +36,7 @@ export const planningSnapshotsRepository = {
       return null;
     }
 
-    return toPlainObject(query.docs[0]?.data() as PlanningSnapshot);
+    return toPlainObject(query.docs[0]?.data() as unknown as PlanningSnapshot);
   },
 };
 
@@ -58,6 +58,6 @@ export const planningDebugRepository = {
       return null;
     }
 
-    return toPlainObject(snapshot.data() as PlanningDebugRecord);
+    return toPlainObject(snapshot.data() as unknown as PlanningDebugRecord);
   },
 };

@@ -9,12 +9,18 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "upload": "opennextjs-cloudflare build && opennextjs-cloudflare upload",
+    "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
+    "cf:secrets:push": "node scripts/push-cloudflare-secrets.mjs"
   },
   "dependencies": {
+    "@opennextjs/cloudflare": "^1.17.1",
     "firebase": "^12.10.0",
-    "firebase-admin": "^13.7.0",
     "googleapis": "^171.4.0",
+    "jose": "^6.2.0",
     "next": "16.1.6",
     "node-ical": "^0.25.5",
     "react": "19.2.3",
@@ -31,6 +37,7 @@
     "eslint-config-next": "16.1.6",
     "tailwindcss": "^4",
     "typescript": "^5",
-    "vitest": "^3.2.4"
+    "vitest": "^3.2.4",
+    "wrangler": "^4.71.0"
   }
 }

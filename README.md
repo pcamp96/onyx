@@ -200,6 +200,49 @@ Hook: I learn faster when I publish the open question before I have the polished
 - Set `APP_URL` to the external origin.
 - Use a process manager such as `systemd`, `pm2`, or Docker.
 
+## Cloudflare Pages deployment
+
+Onyx is configured to deploy to Cloudflare through OpenNext and Wrangler. The Cloudflare build path is:
+
+- `npm run deploy`
+
+Recommended project setup:
+
+- Root directory: `/`
+- Build command: `npm run build`
+- Deploy command: `npm run deploy`
+
+Required Cloudflare runtime secrets match `.env.example`:
+
+- `APP_URL`
+- `FIREBASE_PROJECT_ID`
+- `FIREBASE_CLIENT_EMAIL`
+- `FIREBASE_PRIVATE_KEY`
+- `FIREBASE_WEB_API_KEY`
+- `FIREBASE_AUTH_DOMAIN`
+- `FIREBASE_STORAGE_BUCKET`
+- `FIREBASE_MESSAGING_SENDER_ID`
+- `FIREBASE_APP_ID`
+- `FIREBASE_MEASUREMENT_ID`
+- `ONYX_ENCRYPTION_PROVIDER`
+- `ONYX_ENCRYPTION_KEY`
+- `GOOGLE_CLOUD_KMS_KEY_NAME`
+- `GOOGLE_CLOUD_KMS_LOCATION`
+- `GOOGLE_CLOUD_KMS_KEY_RING`
+- `GOOGLE_CLOUD_KMS_CRYPTO_KEY`
+
+To push secrets from `.env.local` with the CLI:
+
+```bash
+npm run cf:secrets:push
+```
+
+To use a different env file:
+
+```bash
+CF_ENV_FILE=.env.production npm run cf:secrets:push
+```
+
 ## Open-source/plugin notes
 
 - Integrations use a registry + adapter interface.

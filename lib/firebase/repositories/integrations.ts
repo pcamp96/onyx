@@ -11,11 +11,11 @@ const INTEGRATIONS_SUBCOLLECTION = "integrations";
 const INTEGRATION_CONFIGS_SUBCOLLECTION = "integration_configs";
 
 function integrationRef(userId: string, provider: IntegrationProvider) {
-  return userDocument(userId).collection(INTEGRATIONS_SUBCOLLECTION).doc(provider);
+  return userDocument(userId).collection<IntegrationRecord>(INTEGRATIONS_SUBCOLLECTION).doc(provider);
 }
 
 function integrationConfigRef(userId: string, provider: IntegrationProvider) {
-  return userDocument(userId).collection(INTEGRATION_CONFIGS_SUBCOLLECTION).doc(provider);
+  return userDocument(userId).collection<IntegrationConfigRecord>(INTEGRATION_CONFIGS_SUBCOLLECTION).doc(provider);
 }
 
 function defaultIntegration(userId: string, provider: IntegrationProvider): IntegrationRecord {
@@ -43,7 +43,7 @@ export const integrationsRepository = {
       return defaultIntegration(userId, provider);
     }
 
-    return toPlainObject(snapshot.data() as IntegrationRecord);
+    return toPlainObject(snapshot.data() as unknown as IntegrationRecord);
   },
 
   async save(
@@ -68,8 +68,8 @@ export const integrationsRepository = {
 
 export const integrationConfigsRepository = {
   async list(userId: string): Promise<IntegrationConfigRecord[]> {
-    const snapshot = await userDocument(userId).collection(INTEGRATION_CONFIGS_SUBCOLLECTION).get();
-    return snapshot.docs.map((doc) => toPlainObject(doc.data() as IntegrationConfigRecord));
+    const snapshot = await userDocument(userId).collection<IntegrationConfigRecord>(INTEGRATION_CONFIGS_SUBCOLLECTION).get();
+    return snapshot.docs.map((doc) => toPlainObject(doc.data() as unknown as IntegrationConfigRecord));
   },
 
   async get(userId: string, provider: IntegrationProvider): Promise<IntegrationConfigRecord | null> {
@@ -78,7 +78,7 @@ export const integrationConfigsRepository = {
       return null;
     }
 
-    return toPlainObject(snapshot.data() as IntegrationConfigRecord);
+    return toPlainObject(snapshot.data() as unknown as IntegrationConfigRecord);
   },
 
   async save(

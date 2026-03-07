@@ -7,7 +7,7 @@ const COLLECTION = "planner_settings";
 
 export const plannerSettingsRepository = {
   async get(userId: string): Promise<PlannerSettings> {
-    const snapshot = await getDb().collection(COLLECTION).doc(userId).get();
+    const snapshot = await getDb().collection<PlannerSettings>(COLLECTION).doc(userId).get();
     if (!snapshot.exists) {
       return {
         ...DEFAULT_PLANNER_SETTINGS,
@@ -17,7 +17,7 @@ export const plannerSettingsRepository = {
       };
     }
 
-    return toPlainObject(snapshot.data() as PlannerSettings);
+    return toPlainObject(snapshot.data() as unknown as PlannerSettings);
   },
 
   async save(userId: string, input: Partial<PlannerSettings> & { updatedBy: string }) {
@@ -33,7 +33,7 @@ export const plannerSettingsRepository = {
       payload.createdAt = nowIso();
     }
 
-    await getDb().collection(COLLECTION).doc(userId).set(payload, { merge: true });
+    await getDb().collection<PlannerSettings>(COLLECTION).doc(userId).set(payload, { merge: true });
     return payload;
   },
 };

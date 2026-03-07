@@ -14,12 +14,12 @@ export async function POST(request: NextRequest) {
 
     const sessionCookie = await createSessionCookie(body.idToken);
     const cookieStore = await cookies();
-    cookieStore.set(SESSION_COOKIE_NAME, sessionCookie, {
+    cookieStore.set(SESSION_COOKIE_NAME, sessionCookie.value, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       path: "/",
-      maxAge: 60 * 60 * 24 * 5,
+      maxAge: sessionCookie.maxAge,
     });
 
     return ok({ message: "Session created" });

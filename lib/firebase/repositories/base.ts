@@ -1,5 +1,3 @@
-import { Timestamp } from "firebase-admin/firestore";
-
 import { getDb } from "@/lib/firebase/firestore";
 
 export function nowIso() {
@@ -7,13 +5,7 @@ export function nowIso() {
 }
 
 export function toPlainObject<T>(value: T): T {
-  return JSON.parse(JSON.stringify(value, (_key, entry) => {
-    if (entry instanceof Timestamp) {
-      return entry.toDate().toISOString();
-    }
-
-    return entry;
-  })) as T;
+  return JSON.parse(JSON.stringify(value)) as T;
 }
 
 export function stripUndefinedDeep<T>(value: T): T {
