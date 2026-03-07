@@ -1,5 +1,44 @@
 import { isOverdue } from "@/lib/utils/time";
+import { IntegrationRequestError } from "@/lib/integrations/errors";
 import type { IntegrationAdapter, IntegrationSyncResult, SyncContext } from "@/lib/integrations/interfaces";
+
+type TodoistPaginatedResponse<T> = {
+  results?: T[];
+  next_cursor?: string | null;
+};
+
+type TodoistTask = {
+  id: string;
+  content: string;
+  due?: { date?: string; datetime?: string };
+  project_id?: string;
+  description?: string;
+  labels?: string[];
+  priority?: number;
+  checked?: boolean;
+  is_deleted?: boolean;
+};
+
+function normalizeToken(secret?: string | null) {
+  return secret?.trim() ?? "";
+}
+
+function getConfiguredProjectId(config?: Record<string, unknown> | null) {
+  const projectId =
+    config && typeof config.projectId === "string"
+      ? config.projectId.trim()
+      : "";
+  if (projectId) {
+    return projectId;
+  }
+
+  // Legacy config used workspaceId as a freeform hint. Only treat it as a Todoist project ID if it looks valid.
+  const legacyProjectId =
+    config && typeof config.workspaceId === "string"
+      ? config.workspaceId.trim()
+      : "";
+  return /^\d+$/.test(legacyProjectId) ? legacyProjectId : "";
+}
 
 function pickArea(projectName?: string) {
   const label = (projectName || "").toLowerCase();
@@ -29,30 +68,23 @@ export class TodoistAdapter implements IntegrationAdapter {
   }
 
   async sync(context: SyncContext): Promise<IntegrationSyncResult> {
-    if (!context.secret) {
-      throw new Error("Todoist API token is missing");
+    const token = normalizeToken(context.secret);
+    if (!token) {
+      throw new IntegrationRequestError("Todoist API token is missing");
     }
 
-    const response = await fetch("https://api.todoist.com/rest/v2/tasks", {
-      headers: {
-        Authorization: `Bearer ${context.secret}`,
-      },
-      cache: "no-store",
-    });
+    const configuredProjectId = getConfiguredProjectId(context.config as Record<string, unknown> | null | undefined);
+    await this.fetchTodoist("https://api.todoist.com/api/v1/projects", token);
 
-    if (!response.ok) {
-      throw new Error(`Todoist request failed with ${response.status}`);
+    const params = new URLSearchParams();
+    if (configuredProjectId) {
+      params.set("project_id", configuredProjectId);
     }
 
-    const tasksPayload = (await response.json()) as Array<{
-      id: string;
-      content: string;
-      due?: { date?: string; datetime?: string };
-      project_id?: string;
-      description?: string;
-      labels?: string[];
-      priority?: number;
-    }>;
+    const tasksPayload = await this.fetchAllTasks(
+      `https://api.todoist.com/api/v1/tasks${params.size ? `?${params.toString()}` : ""}`,
+      token,
+    );
 
     const tasks = tasksPayload.map((task) => {
       const dueAt = task.due?.datetime ?? (task.due?.date ? `${task.due.date}T17:00:00.000Z` : undefined);
@@ -62,14 +94,14 @@ export class TodoistAdapter implements IntegrationAdapter {
         id: `todoist-${task.id}`,
         sourceId: task.id,
         source: "todoist" as const,
-        sourceUrl: undefined,
+        sourceUrl: `https://app.todoist.com/app/task/${task.id}`,
         area,
         title: task.content,
         notes: task.description,
-        status: "open" as const,
+        status: task.checked ? ("done" as const) : ("open" as const),
         dueDate: dueAt,
         isOverdue: isOverdue(dueAt, context.now),
-        isBlocked: false,
+        isBlocked: Boolean(task.is_deleted),
         projectId: task.project_id,
         tags: task.labels,
         priority: task.priority,
@@ -81,7 +113,51 @@ export class TodoistAdapter implements IntegrationAdapter {
       calendarEvents: [],
       articleEntries: [],
       warnings: [],
-      rawPreview: { count: tasks.length },
+      rawPreview: { count: tasks.length, projectId: configuredProjectId || undefined },
     };
+  }
+
+  private async fetchTodoist(url: string, token: string) {
+    const response = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      throw new IntegrationRequestError(await this.readTodoistError(response), response.status);
+    }
+
+    return response;
+  }
+
+  private async fetchAllTasks(url: string, token: string) {
+    const tasks: TodoistTask[] = [];
+    let nextUrl: string | null = url;
+
+    while (nextUrl) {
+      const response = await this.fetchTodoist(nextUrl, token);
+      const payload = (await response.json()) as TodoistPaginatedResponse<TodoistTask>;
+      tasks.push(...(payload.results ?? []));
+      nextUrl = payload.next_cursor ? this.withCursor(url, payload.next_cursor) : null;
+    }
+
+    return tasks;
+  }
+
+  private withCursor(url: string, cursor: string) {
+    const next = new URL(url);
+    next.searchParams.set("cursor", cursor);
+    return next.toString();
+  }
+
+  private async readTodoistError(response: Response) {
+    try {
+      const payload = (await response.json()) as { error?: string };
+      return payload.error || `Todoist request failed with ${response.status}`;
+    } catch {
+      return `Todoist request failed with ${response.status}`;
+    }
   }
 }
