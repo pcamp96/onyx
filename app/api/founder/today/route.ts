@@ -1,9 +1,11 @@
+import { NextRequest } from "next/server";
+
 import { getTodayPlan } from "@/lib/planner/service";
-import { requireApiSession } from "@/lib/utils/auth";
+import { requireFounderApiAccess } from "@/lib/utils/auth";
 import { ok, unauthorized } from "@/lib/utils/http";
 
-export async function GET() {
-  const session = await requireApiSession();
+export async function GET(request: NextRequest) {
+  const session = await requireFounderApiAccess(request);
   if (!session) {
     return unauthorized();
   }

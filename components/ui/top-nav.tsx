@@ -13,6 +13,7 @@ const links = [
   { href: "/overview", label: "Overview" },
   { href: "/settings", label: "Settings" },
   { href: "/integrations", label: "Integrations" },
+  { href: "/gpt-setup", label: "GPT Setup" },
   { href: "/debug", label: "Debug" },
 ];
 

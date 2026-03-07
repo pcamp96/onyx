@@ -1,0 +1,40 @@
+import { describe, expect, it } from "vitest";
+
+process.env.APP_URL = process.env.APP_URL ?? "https://onyx.example.com";
+process.env.FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID ?? "demo-project";
+process.env.FIREBASE_CLIENT_EMAIL = process.env.FIREBASE_CLIENT_EMAIL ?? "demo@example.com";
+process.env.FIREBASE_PRIVATE_KEY = process.env.FIREBASE_PRIVATE_KEY ?? "private-key";
+process.env.FIREBASE_WEB_API_KEY = process.env.FIREBASE_WEB_API_KEY ?? "web-api-key";
+process.env.FIREBASE_AUTH_DOMAIN = process.env.FIREBASE_AUTH_DOMAIN ?? "demo.firebaseapp.com";
+process.env.FIREBASE_APP_ID = process.env.FIREBASE_APP_ID ?? "app-id";
+process.env.ONYX_ENCRYPTION_KEY = process.env.ONYX_ENCRYPTION_KEY ?? "test-encryption-key";
+
+import { buildCanonicalOpenApiSpec, buildCanonicalOpenApiYaml } from "@/lib/gpt/openapi";
+
+describe("canonical openapi schema", () => {
+  it("includes only the intended GPT-facing endpoints and API key auth", () => {
+    const schema = buildCanonicalOpenApiSpec();
+
+    expect(schema.openapi).toBe("3.1.0");
+    expect(schema.servers[0]?.url).toBe("https://onyx.example.com");
+    expect(Object.keys(schema.paths)).toEqual([
+      "/api/founder/today",
+      "/api/founder/week",
+      "/api/founder/capture",
+    ]);
+    expect(schema.components.securitySchemes.OnyxApiKey).toMatchObject({
+      type: "apiKey",
+      in: "header",
+      name: "X-Onyx-API-Key",
+    });
+    expect(schema.paths["/api/founder/capture"].post["x-openai-isConsequential"]).toBe(true);
+  });
+
+  it("renders a yaml version for direct paste into custom actions", () => {
+    const yaml = buildCanonicalOpenApiYaml();
+
+    expect(yaml).toContain("openapi: 3.1.0");
+    expect(yaml).toContain("/api/founder/today:");
+    expect(yaml).toContain("name: X-Onyx-API-Key");
+  });
+});
