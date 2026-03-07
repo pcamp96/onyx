@@ -17,6 +17,7 @@ describe("canonical openapi schema", () => {
 
     expect(schema.openapi).toBe("3.1.0");
     expect(schema.servers[0]?.url).toBe("https://onyx.example.com");
+    expect(schema.servers[0]?.description?.toLowerCase()).toContain("externally reachable");
     expect(Object.keys(schema.paths)).toEqual([
       "/api/founder/today",
       "/api/founder/week",
@@ -27,7 +28,11 @@ describe("canonical openapi schema", () => {
       in: "header",
       name: "X-Onyx-API-Key",
     });
+    expect(schema.paths["/api/founder/today"].get.operationId).toBe("getFounderDailyPriorities");
+    expect(schema.paths["/api/founder/week"].get.operationId).toBe("getFounderWeeklyOverview");
     expect(schema.paths["/api/founder/capture"].post["x-openai-isConsequential"]).toBe(true);
+    expect(schema.components.schemas.TodayPlanResponse.additionalProperties).toBe(false);
+    expect(schema.components.schemas.RankedTask.properties.sourceUrl.format).toBe("uri");
   });
 
   it("renders a yaml version for direct paste into custom actions", () => {

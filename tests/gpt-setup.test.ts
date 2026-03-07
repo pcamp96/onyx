@@ -52,7 +52,9 @@ describe("gpt setup generator", () => {
     expect(setup.instructions).toContain("not a scheduler");
     expect(setup.instructions).toContain("HTG first, TLW second");
     expect(setup.instructions).toContain("America/Chicago");
+    expect(setup.instructions).toContain("Do not refer to any /ideas endpoint");
     expect(setup.actionInstructions).toContain("add a new custom action");
+    expect(setup.actionInstructions).toContain("getFounderDailyPriorities");
     expect(setup.actionSchemaYaml).toContain("openapi: 3.1.0");
     expect(setup.checklist[2]).toContain("X-Onyx-API-Key");
   });

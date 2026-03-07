@@ -1,4 +1,4 @@
-import type { PlannerTodayResult } from "@/lib/core/types";
+import type { PlannerTodayResult, PlannerWeekResult } from "@/lib/core/types";
 import { getServerEnv } from "@/lib/config/env";
 
 const sampleTodayResponse: PlannerTodayResult = {
@@ -23,6 +23,8 @@ const sampleTodayResponse: PlannerTodayResult = {
       isBusy: true,
       calendarName: "Primary",
       organizerEmail: "patrick@example.com",
+      selfAttendee: true,
+      responseStatus: "accepted",
     },
   ],
   primaryFocus: "How-To Geek output",
@@ -55,6 +57,33 @@ const sampleTodayResponse: PlannerTodayResult = {
         createdWorkshopAdjustment: 2,
       },
     },
+    {
+      id: "task-2",
+      source: "asana",
+      sourceId: "task-2",
+      area: "TLW",
+      title: "Review TLW quote funnel notes",
+      status: "open",
+      dueDate: "2026-03-08T18:00:00.000Z",
+      isOverdue: false,
+      isBlocked: false,
+      score: 76,
+      rank: 2,
+      reason: "TLW work matters next, but it should follow the top HTG pace task.",
+      scoreBreakdown: {
+        deadlineProximity: 14,
+        writingPaceGap: 8,
+        incomeImpact: 7,
+        businessImpact: 13,
+        urgency: 9,
+        areaWeight: 11,
+        overdueAdjustment: 0,
+        calendarCapacityAdjustment: 2,
+        sponsorRiskAdjustment: 0,
+        blockedAdjustment: 0,
+        createdWorkshopAdjustment: 0,
+      },
+    },
   ],
   warnings: ["One article remains to hit the weekly minimum."],
   contentPrompts: [
@@ -67,47 +96,422 @@ const sampleTodayResponse: PlannerTodayResult = {
     {
       category: "Lesson",
       project: "The Laser Workshop",
-      prompt: "One thing I learned this week while working on The Laser Workshop: founder systems break when operating friction stays hidden. It changed how I think about showing the messy work instead of just the polished output.",
+      prompt: "One thing I learned this week while working on The Laser Workshop: founder systems break when operating friction stays hidden.",
       hook: "Most of the useful lessons in The Laser Workshop came from friction, not momentum.",
-    },
-    {
-      category: "Opinion",
-      project: "Unbrella",
-      prompt: "Opinion: privacy-first weather products should not need ads or tracking to feel viable. My take comes from working through what actually creates trust in consumer software.",
-      hook: "A lot of accepted startup advice falls apart once you look at the real operating details.",
     },
   ],
   generatedAt: "2026-03-07T14:05:00.000Z",
 };
 
+const sampleWeekResponse: PlannerWeekResult = {
+  weekStart: "2026-03-02",
+  weekEnd: "2026-03-08",
+  summary: {
+    articlesSubmittedThisWeek: 2,
+    weeklyMinimum: 3,
+    weeklyGoal: 5,
+    remainingToMinimum: 1,
+    remainingToGoal: 3,
+    estimatedPaySoFar: 650,
+  },
+  primaryFocus: "How-To Geek output",
+  rankedPriorities: [
+    {
+      id: "task-1",
+      source: "todoist",
+      sourceId: "task-1",
+      sourceUrl: "https://app.todoist.com/app/task/123",
+      area: "HTG",
+      title: "Draft Chromebook roundup",
+      status: "open",
+      dueDate: "2026-03-07",
+      isOverdue: false,
+      isBlocked: false,
+      score: 91,
+      rank: 1,
+      reason: "HTG output is still below weekly pace and this task has strong business impact.",
+      scoreBreakdown: {
+        deadlineProximity: 20,
+        writingPaceGap: 16,
+        incomeImpact: 8,
+        businessImpact: 15,
+        urgency: 12,
+        areaWeight: 15,
+        overdueAdjustment: 0,
+        calendarCapacityAdjustment: 3,
+        sponsorRiskAdjustment: 0,
+        blockedAdjustment: 0,
+        createdWorkshopAdjustment: 2,
+      },
+    },
+    {
+      id: "task-3",
+      source: "asana",
+      sourceId: "task-3",
+      area: "CREATED_WORKSHOP",
+      title: "Prep sponsor revision notes",
+      status: "open",
+      dueDate: "2026-03-09T16:00:00.000Z",
+      isOverdue: false,
+      isBlocked: false,
+      sponsorRisk: true,
+      score: 73,
+      rank: 2,
+      reason: "Created Workshop is elevated because a sponsor obligation is approaching.",
+      scoreBreakdown: {
+        deadlineProximity: 18,
+        writingPaceGap: 0,
+        incomeImpact: 6,
+        businessImpact: 10,
+        urgency: 12,
+        areaWeight: 6,
+        overdueAdjustment: 0,
+        calendarCapacityAdjustment: 2,
+        sponsorRiskAdjustment: 14,
+        blockedAdjustment: 0,
+        createdWorkshopAdjustment: 5,
+      },
+    },
+  ],
+  deadlineRisks: ["Sponsor obligation is approaching for Prep sponsor revision notes."],
+  warnings: [
+    "One article remains to hit the weekly minimum.",
+    "Sponsor obligation is approaching for Prep sponsor revision notes.",
+  ],
+  contentPrompts: [
+    {
+      category: "Story",
+      project: "Onyx",
+      prompt: "A real story from this week in Onyx: refining the daily planning workflow changed how I think about founder-facing software.",
+      hook: "The interesting part of building Onyx is how often the plan changes once the work starts.",
+    },
+  ],
+  generatedAt: "2026-03-07T14:05:00.000Z",
+};
+
+const sampleCaptureRequest = {
+  text: "Follow up with sponsor about revision deadline",
+};
+
+const sampleCaptureResponse = {
+  id: "capture-1",
+  userId: "user-1",
+  text: "Follow up with sponsor about revision deadline",
+  source: "api",
+  status: "open",
+  createdAt: "2026-03-07T14:10:00.000Z",
+  createdBy: "user-1",
+};
+
+function buildServerDescription(appUrl: string) {
+  const hostname = new URL(appUrl).hostname;
+  if (hostname === "localhost" || hostname === "127.0.0.1") {
+    return "Local development origin from APP_URL. For Custom GPT actions, replace this with an externally reachable HTTPS origin or tunnel before importing the schema.";
+  }
+
+  return "Externally reachable origin from APP_URL. This should be the real HTTPS base URL that the Custom GPT can call.";
+}
+
+function buildSchemaComponents() {
+  return {
+    securitySchemes: {
+      OnyxApiKey: {
+        type: "apiKey",
+        in: "header",
+        name: "X-Onyx-API-Key",
+        description: "Per-user Onyx GPT API key generated from the GPT Setup page.",
+      },
+    },
+    schemas: {
+      ErrorResponse: {
+        type: "object",
+        additionalProperties: false,
+        required: ["error"],
+        properties: {
+          error: { type: "string", minLength: 1 },
+          details: true,
+        },
+      },
+      PlannerSummary: {
+        type: "object",
+        additionalProperties: false,
+        required: ["articlesSubmittedThisWeek", "weeklyMinimum", "weeklyGoal", "remainingToMinimum", "remainingToGoal"],
+        properties: {
+          articlesSubmittedThisWeek: { type: "integer", minimum: 0 },
+          weeklyMinimum: { type: "integer", minimum: 0 },
+          weeklyGoal: { type: "integer", minimum: 0 },
+          remainingToMinimum: { type: "integer", minimum: 0 },
+          remainingToGoal: { type: "integer", minimum: 0 },
+          estimatedPaySoFar: { type: "number" },
+        },
+      },
+      CalendarConstraint: {
+        type: "object",
+        additionalProperties: false,
+        required: ["id", "source", "sourceId", "title", "start", "end", "allDay", "isBusy"],
+        properties: {
+          id: { type: "string", minLength: 1 },
+          source: { type: "string", enum: ["calendar"] },
+          sourceId: { type: "string", minLength: 1 },
+          sourceUrl: { type: "string", format: "uri" },
+          title: { type: "string", minLength: 1 },
+          start: { type: "string", format: "date-time" },
+          end: { type: "string", format: "date-time" },
+          allDay: { type: "boolean" },
+          isBusy: { type: "boolean" },
+          calendarName: { type: "string" },
+          organizerEmail: { type: "string", format: "email" },
+          organizerName: { type: "string" },
+          creatorEmail: { type: "string", format: "email" },
+          selfAttendee: { type: "boolean" },
+          responseStatus: {
+            type: "string",
+            enum: ["needsAction", "declined", "tentative", "accepted"],
+          },
+        },
+      },
+      ScoreBreakdown: {
+        type: "object",
+        additionalProperties: false,
+        required: [
+          "deadlineProximity",
+          "writingPaceGap",
+          "incomeImpact",
+          "businessImpact",
+          "urgency",
+          "areaWeight",
+          "overdueAdjustment",
+          "calendarCapacityAdjustment",
+          "sponsorRiskAdjustment",
+          "blockedAdjustment",
+          "createdWorkshopAdjustment",
+        ],
+        properties: {
+          deadlineProximity: { type: "number" },
+          writingPaceGap: { type: "number" },
+          incomeImpact: { type: "number" },
+          businessImpact: { type: "number" },
+          urgency: { type: "number" },
+          areaWeight: { type: "number" },
+          overdueAdjustment: { type: "number" },
+          calendarCapacityAdjustment: { type: "number" },
+          sponsorRiskAdjustment: { type: "number" },
+          blockedAdjustment: { type: "number" },
+          createdWorkshopAdjustment: { type: "number" },
+        },
+      },
+      ContentPrompt: {
+        type: "object",
+        additionalProperties: false,
+        required: ["category", "project", "prompt", "hook"],
+        properties: {
+          category: {
+            type: "string",
+            enum: [
+              "Story",
+              "Opinion",
+              "Lesson",
+              "Behind the scenes",
+              "Build in public",
+              "Problem/Solution",
+              "Progress update",
+              "Curiosity/question",
+              "Vision",
+              "Founder reflection",
+            ],
+          },
+          project: { type: "string", minLength: 1 },
+          prompt: { type: "string", minLength: 1 },
+          hook: { type: "string", minLength: 1 },
+        },
+        description: "Optional publishing or build-in-public prompts derived from current priorities and pacing. Safe to render directly when present.",
+      },
+      RankedTask: {
+        type: "object",
+        additionalProperties: false,
+        required: [
+          "id",
+          "source",
+          "sourceId",
+          "area",
+          "title",
+          "status",
+          "isOverdue",
+          "isBlocked",
+          "score",
+          "rank",
+          "reason",
+          "scoreBreakdown",
+        ],
+        properties: {
+          id: { type: "string", minLength: 1 },
+          source: {
+            type: "string",
+            enum: ["asana", "todoist", "google-sheets", "calendar"],
+          },
+          sourceId: { type: "string", minLength: 1 },
+          sourceUrl: { type: "string", format: "uri" },
+          area: { type: "string", enum: ["HTG", "TLW", "CREATED_WORKSHOP", "ADMIN"] },
+          title: { type: "string", minLength: 1 },
+          notes: { type: "string" },
+          status: { type: "string", enum: ["open", "in_progress", "blocked", "done"] },
+          dueDate: {
+            oneOf: [
+              { type: "string", format: "date" },
+              { type: "string", format: "date-time" },
+            ],
+          },
+          priority: { type: "number" },
+          estimatedEffort: { type: "number" },
+          tags: {
+            type: "array",
+            items: { type: "string", minLength: 1 },
+          },
+          isOverdue: { type: "boolean" },
+          isBlocked: { type: "boolean" },
+          businessImpact: { type: "number" },
+          incomeImpact: { type: "number" },
+          createdAt: { type: "string", format: "date-time" },
+          updatedAt: { type: "string", format: "date-time" },
+          sponsorRisk: { type: "boolean" },
+          projectName: { type: "string" },
+          projectId: { type: "string" },
+          score: { type: "number" },
+          rank: { type: "integer", minimum: 1 },
+          reason: { type: "string", minLength: 1 },
+          scoreBreakdown: { $ref: "#/components/schemas/ScoreBreakdown" },
+        },
+      },
+      TodayPlanResponse: {
+        type: "object",
+        additionalProperties: false,
+        required: ["date", "summary", "calendarConstraints", "primaryFocus", "rankedTasks", "warnings", "generatedAt"],
+        properties: {
+          date: { type: "string", format: "date" },
+          summary: { $ref: "#/components/schemas/PlannerSummary" },
+          calendarConstraints: {
+            type: "array",
+            items: { $ref: "#/components/schemas/CalendarConstraint" },
+          },
+          primaryFocus: { type: "string", minLength: 1 },
+          rankedTasks: {
+            type: "array",
+            items: { $ref: "#/components/schemas/RankedTask" },
+          },
+          warnings: {
+            type: "array",
+            items: { type: "string", minLength: 1 },
+          },
+          contentPrompts: {
+            type: "array",
+            items: { $ref: "#/components/schemas/ContentPrompt" },
+          },
+          generatedAt: { type: "string", format: "date-time" },
+        },
+      },
+      WeekPlanResponse: {
+        type: "object",
+        additionalProperties: false,
+        required: [
+          "weekStart",
+          "weekEnd",
+          "summary",
+          "primaryFocus",
+          "rankedPriorities",
+          "deadlineRisks",
+          "warnings",
+          "generatedAt",
+        ],
+        properties: {
+          weekStart: { type: "string", format: "date" },
+          weekEnd: { type: "string", format: "date" },
+          summary: { $ref: "#/components/schemas/PlannerSummary" },
+          primaryFocus: { type: "string", minLength: 1 },
+          rankedPriorities: {
+            type: "array",
+            items: { $ref: "#/components/schemas/RankedTask" },
+          },
+          deadlineRisks: {
+            type: "array",
+            items: { type: "string", minLength: 1 },
+          },
+          warnings: {
+            type: "array",
+            items: { type: "string", minLength: 1 },
+          },
+          contentPrompts: {
+            type: "array",
+            items: { $ref: "#/components/schemas/ContentPrompt" },
+          },
+          generatedAt: { type: "string", format: "date-time" },
+        },
+      },
+      CaptureItemRequest: {
+        type: "object",
+        additionalProperties: false,
+        required: ["text"],
+        properties: {
+          text: {
+            type: "string",
+            minLength: 1,
+            description: "Task, reminder, or idea to save into Onyx.",
+          },
+        },
+      },
+      CapturedItemResponse: {
+        type: "object",
+        additionalProperties: false,
+        required: ["id", "userId", "text", "source", "status", "createdAt", "createdBy"],
+        properties: {
+          id: { type: "string", minLength: 1 },
+          userId: { type: "string", minLength: 1 },
+          text: { type: "string", minLength: 1 },
+          source: { type: "string", enum: ["manual", "api", "future-plugin"] },
+          status: { type: "string", enum: ["open", "processed"] },
+          createdAt: { type: "string", format: "date-time" },
+          createdBy: { type: "string", minLength: 1 },
+        },
+      },
+    },
+  };
+}
+
 export function buildCanonicalOpenApiSpec() {
   const { APP_URL } = getServerEnv();
+  const baseUrl = APP_URL.replace(/\/$/, "");
 
   return {
     openapi: "3.1.0",
     info: {
       title: "Onyx Founder API",
-      version: "1.0.0",
-      description: "Canonical Onyx Actions schema for ranked founder priorities and lightweight capture.",
+      version: "1.1.0",
+      description:
+        "Canonical Onyx Custom GPT action schema for ranked founder priorities, weekly pacing, and explicit capture. Set APP_URL to the externally reachable origin for the deployment that the GPT should call.",
     },
-    servers: [{ url: APP_URL }],
+    servers: [
+      {
+        url: baseUrl,
+        description: buildServerDescription(baseUrl),
+      },
+    ],
     security: [{ OnyxApiKey: [] }],
     paths: {
       "/api/founder/today": {
         get: {
-          operationId: "getFounderTodayPlan",
-          summary: "Get ranked execution priorities for today",
+          operationId: "getFounderDailyPriorities",
+          summary: "Get today's ranked execution priorities",
           description:
-            "Use this when the user asks what to do today. Preserve the ranked task order from the API and surface warnings clearly instead of inventing a new priority order.",
+            "Call this only when the user asks what to do today, what should happen first, or how to execute the current day. Preserve rankedTasks order exactly. Treat calendarConstraints as schedule limits, not as the planner. Use contentPrompts only when the user wants publishing or content ideas and the field is present.",
           security: [{ OnyxApiKey: [] }],
           responses: {
             "200": {
-              description: "Ranked founder priorities for the current day.",
+              description: "Today's ranked founder priorities and pacing signals.",
               content: {
                 "application/json": {
-                  schema: { $ref: "#/components/schemas/PlannerTodayResult" },
+                  schema: { $ref: "#/components/schemas/TodayPlanResponse" },
                   examples: {
-                    default: {
+                    todayPlan: {
+                      summary: "Sample /today response",
                       value: sampleTodayResponse,
                     },
                   },
@@ -119,6 +523,11 @@ export function buildCanonicalOpenApiSpec() {
               content: {
                 "application/json": {
                   schema: { $ref: "#/components/schemas/ErrorResponse" },
+                  examples: {
+                    unauthorized: {
+                      value: { error: "Unauthorized" },
+                    },
+                  },
                 },
               },
             },
@@ -127,17 +536,23 @@ export function buildCanonicalOpenApiSpec() {
       },
       "/api/founder/week": {
         get: {
-          operationId: "getFounderWeekPlan",
-          summary: "Get weekly priority and pace overview",
+          operationId: "getFounderWeeklyOverview",
+          summary: "Get this week's ranked priorities and pace overview",
           description:
-            "Use this when the user asks about weekly priorities, pace, risk, or whether they are behind. Keep the ranking order and warnings from Onyx intact.",
+            "Call this when the user asks about weekly priorities, pace, bottlenecks, or deadline risk. Preserve rankedPriorities order exactly. Highlight warnings and deadlineRisks clearly. Do not call this for simple capture requests.",
           security: [{ OnyxApiKey: [] }],
           responses: {
             "200": {
-              description: "Weekly execution and pacing overview.",
+              description: "Weekly priority ordering, pace summary, and deadline risks.",
               content: {
                 "application/json": {
-                  schema: { $ref: "#/components/schemas/PlannerWeekResult" },
+                  schema: { $ref: "#/components/schemas/WeekPlanResponse" },
+                  examples: {
+                    weekPlan: {
+                      summary: "Sample /week response",
+                      value: sampleWeekResponse,
+                    },
+                  },
                 },
               },
             },
@@ -146,6 +561,11 @@ export function buildCanonicalOpenApiSpec() {
               content: {
                 "application/json": {
                   schema: { $ref: "#/components/schemas/ErrorResponse" },
+                  examples: {
+                    unauthorized: {
+                      value: { error: "Unauthorized" },
+                    },
+                  },
                 },
               },
             },
@@ -154,17 +574,23 @@ export function buildCanonicalOpenApiSpec() {
       },
       "/api/founder/capture": {
         post: {
-          operationId: "captureFounderItem",
-          summary: "Capture a new task, reminder, or idea",
+          operationId: "captureFounderInboxItem",
+          summary: "Save a task, idea, or reminder into Onyx",
           description:
-            "Use this when the user wants Onyx to save a new task, idea, or reminder. Only capture what the user explicitly asked to save.",
+            "Call this only when the user explicitly wants to save something into Onyx. Do not call it for read-only planning questions, summaries, or prioritization. Capture only the user's requested item text.",
           security: [{ OnyxApiKey: [] }],
           "x-openai-isConsequential": true,
           requestBody: {
             required: true,
             content: {
               "application/json": {
-                schema: { $ref: "#/components/schemas/CaptureRequest" },
+                schema: { $ref: "#/components/schemas/CaptureItemRequest" },
+                examples: {
+                  captureRequest: {
+                    summary: "Sample capture request",
+                    value: sampleCaptureRequest,
+                  },
+                },
               },
             },
           },
@@ -173,7 +599,13 @@ export function buildCanonicalOpenApiSpec() {
               description: "Captured item saved.",
               content: {
                 "application/json": {
-                  schema: { $ref: "#/components/schemas/CapturedItem" },
+                  schema: { $ref: "#/components/schemas/CapturedItemResponse" },
+                  examples: {
+                    capturedItem: {
+                      summary: "Sample capture response",
+                      value: sampleCaptureResponse,
+                    },
+                  },
                 },
               },
             },
@@ -182,6 +614,11 @@ export function buildCanonicalOpenApiSpec() {
               content: {
                 "application/json": {
                   schema: { $ref: "#/components/schemas/ErrorResponse" },
+                  examples: {
+                    missingText: {
+                      value: { error: "Text is required" },
+                    },
+                  },
                 },
               },
             },
@@ -190,6 +627,11 @@ export function buildCanonicalOpenApiSpec() {
               content: {
                 "application/json": {
                   schema: { $ref: "#/components/schemas/ErrorResponse" },
+                  examples: {
+                    unauthorized: {
+                      value: { error: "Unauthorized" },
+                    },
+                  },
                 },
               },
             },
@@ -197,241 +639,7 @@ export function buildCanonicalOpenApiSpec() {
         },
       },
     },
-    components: {
-      securitySchemes: {
-        OnyxApiKey: {
-          type: "apiKey",
-          in: "header",
-          name: "X-Onyx-API-Key",
-          description: "Per-user Onyx GPT API key generated from the GPT Setup page.",
-        },
-      },
-      schemas: {
-        ErrorResponse: {
-          type: "object",
-          required: ["error"],
-          properties: {
-            error: { type: "string" },
-            details: {},
-          },
-        },
-        PlannerSummary: {
-          type: "object",
-          required: ["articlesSubmittedThisWeek", "weeklyMinimum", "weeklyGoal", "remainingToMinimum", "remainingToGoal"],
-          properties: {
-            articlesSubmittedThisWeek: { type: "integer" },
-            weeklyMinimum: { type: "integer" },
-            weeklyGoal: { type: "integer" },
-            remainingToMinimum: { type: "integer" },
-            remainingToGoal: { type: "integer" },
-            estimatedPaySoFar: { type: "number" },
-          },
-        },
-        NormalizedCalendarEvent: {
-          type: "object",
-          required: ["id", "source", "sourceId", "title", "start", "end", "allDay", "isBusy"],
-          properties: {
-            id: { type: "string" },
-            source: { type: "string", enum: ["calendar"] },
-            sourceId: { type: "string" },
-            sourceUrl: { type: "string" },
-            title: { type: "string" },
-            start: { type: "string" },
-            end: { type: "string" },
-            allDay: { type: "boolean" },
-            isBusy: { type: "boolean" },
-            calendarName: { type: "string" },
-            organizerEmail: { type: "string" },
-            organizerName: { type: "string" },
-            creatorEmail: { type: "string" },
-            selfAttendee: { type: "boolean" },
-            responseStatus: { type: "string" },
-          },
-        },
-        ScoreBreakdown: {
-          type: "object",
-          required: [
-            "deadlineProximity",
-            "writingPaceGap",
-            "incomeImpact",
-            "businessImpact",
-            "urgency",
-            "areaWeight",
-            "overdueAdjustment",
-            "calendarCapacityAdjustment",
-            "sponsorRiskAdjustment",
-            "blockedAdjustment",
-            "createdWorkshopAdjustment",
-          ],
-          properties: {
-            deadlineProximity: { type: "number" },
-            writingPaceGap: { type: "number" },
-            incomeImpact: { type: "number" },
-            businessImpact: { type: "number" },
-            urgency: { type: "number" },
-            areaWeight: { type: "number" },
-            overdueAdjustment: { type: "number" },
-            calendarCapacityAdjustment: { type: "number" },
-            sponsorRiskAdjustment: { type: "number" },
-            blockedAdjustment: { type: "number" },
-            createdWorkshopAdjustment: { type: "number" },
-          },
-        },
-        ContentPrompt: {
-          type: "object",
-          required: ["category", "project", "prompt", "hook"],
-          properties: {
-            category: {
-              type: "string",
-              enum: [
-                "Story",
-                "Opinion",
-                "Lesson",
-                "Behind the scenes",
-                "Build in public",
-                "Problem/Solution",
-                "Progress update",
-                "Curiosity/question",
-                "Vision",
-                "Founder reflection",
-              ],
-            },
-            project: { type: "string" },
-            prompt: { type: "string" },
-            hook: { type: "string" },
-          },
-        },
-        RankedTask: {
-          type: "object",
-          required: [
-            "id",
-            "source",
-            "sourceId",
-            "area",
-            "title",
-            "status",
-            "isOverdue",
-            "isBlocked",
-            "score",
-            "rank",
-            "reason",
-            "scoreBreakdown",
-          ],
-          properties: {
-            id: { type: "string" },
-            source: { type: "string" },
-            sourceId: { type: "string" },
-            sourceUrl: { type: "string" },
-            area: { type: "string", enum: ["HTG", "TLW", "CREATED_WORKSHOP", "ADMIN"] },
-            title: { type: "string" },
-            notes: { type: "string" },
-            status: { type: "string", enum: ["open", "in_progress", "blocked", "done"] },
-            dueDate: { type: "string" },
-            priority: { type: "number" },
-            estimatedEffort: { type: "number" },
-            tags: { type: "array", items: { type: "string" } },
-            isOverdue: { type: "boolean" },
-            isBlocked: { type: "boolean" },
-            businessImpact: { type: "number" },
-            incomeImpact: { type: "number" },
-            createdAt: { type: "string" },
-            updatedAt: { type: "string" },
-            sponsorRisk: { type: "boolean" },
-            projectName: { type: "string" },
-            projectId: { type: "string" },
-            score: { type: "number" },
-            rank: { type: "integer" },
-            reason: { type: "string" },
-            scoreBreakdown: { $ref: "#/components/schemas/ScoreBreakdown" },
-          },
-        },
-        PlannerTodayResult: {
-          type: "object",
-          required: ["date", "summary", "calendarConstraints", "primaryFocus", "rankedTasks", "warnings", "contentPrompts"],
-          properties: {
-            date: { type: "string" },
-            summary: { $ref: "#/components/schemas/PlannerSummary" },
-            calendarConstraints: {
-              type: "array",
-              items: { $ref: "#/components/schemas/NormalizedCalendarEvent" },
-            },
-            primaryFocus: { type: "string" },
-            rankedTasks: {
-              type: "array",
-              items: { $ref: "#/components/schemas/RankedTask" },
-            },
-            warnings: {
-              type: "array",
-              items: { type: "string" },
-            },
-            contentPrompts: {
-              type: "array",
-              items: { $ref: "#/components/schemas/ContentPrompt" },
-            },
-            generatedAt: { type: "string" },
-          },
-        },
-        PlannerWeekResult: {
-          type: "object",
-          required: [
-            "weekStart",
-            "weekEnd",
-            "summary",
-            "primaryFocus",
-            "rankedPriorities",
-            "deadlineRisks",
-            "warnings",
-            "contentPrompts",
-          ],
-          properties: {
-            weekStart: { type: "string" },
-            weekEnd: { type: "string" },
-            summary: { $ref: "#/components/schemas/PlannerSummary" },
-            primaryFocus: { type: "string" },
-            rankedPriorities: {
-              type: "array",
-              items: { $ref: "#/components/schemas/RankedTask" },
-            },
-            deadlineRisks: {
-              type: "array",
-              items: { type: "string" },
-            },
-            warnings: {
-              type: "array",
-              items: { type: "string" },
-            },
-            contentPrompts: {
-              type: "array",
-              items: { $ref: "#/components/schemas/ContentPrompt" },
-            },
-            generatedAt: { type: "string" },
-          },
-        },
-        CaptureRequest: {
-          type: "object",
-          required: ["text"],
-          properties: {
-            text: {
-              type: "string",
-              description: "Task, reminder, or idea to save into Onyx.",
-            },
-          },
-        },
-        CapturedItem: {
-          type: "object",
-          required: ["id", "userId", "text", "source", "status", "createdAt", "createdBy"],
-          properties: {
-            id: { type: "string" },
-            userId: { type: "string" },
-            text: { type: "string" },
-            source: { type: "string", enum: ["manual", "api", "future-plugin"] },
-            status: { type: "string", enum: ["open", "processed"] },
-            createdAt: { type: "string" },
-            createdBy: { type: "string" },
-          },
-        },
-      },
-    },
+    components: buildSchemaComponents(),
   };
 }
 

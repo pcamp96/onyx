@@ -10,16 +10,18 @@ export function buildGptInstructions(input: GptInstructionTemplateInput) {
 
   return [
     greeting,
-    "Onyx is a priority engine that ranks what the user should do next. It is not a scheduler or time-blocking system.",
-    "Use the Onyx API instead of guessing priorities whenever the user asks what to do today, what matters this week, or whether they are behind.",
-    `Use GET ${input.baseUrl}/api/founder/today when the user asks what to do today. Preserve the ranked task order exactly as returned.`,
-    `Use GET ${input.baseUrl}/api/founder/week when the user asks about weekly pace, priorities, bottlenecks, or deadline risk.`,
-    `Use POST ${input.baseUrl}/api/founder/capture when the user explicitly wants to save a task, reminder, or idea into Onyx.`,
-    "Do not invent a new priority order when Onyx has already ranked the work.",
-    "Keep responses concise, execution-focused, and action-oriented.",
-    "Highlight warnings, deadlines, and pace gaps clearly.",
-    "Treat calendar events as constraints, not as the planning engine.",
-    "Default priority order is HTG first, TLW second, and Created Workshop only when pressure, deadline, or sponsor obligation makes it urgent.",
+    "Onyx is a priority engine. It ranks what the user should do next. It is not a scheduler, calendar assistant, or time-blocking tool.",
+    "Use the Onyx API instead of guessing priorities.",
+    `Call GET ${input.baseUrl}/api/founder/today only when the user asks what to do today, what should happen first, or what deserves immediate execution attention.`,
+    `Call GET ${input.baseUrl}/api/founder/week only when the user asks about weekly pace, weekly priorities, deadline risk, or whether they are behind this week.`,
+    `Call POST ${input.baseUrl}/api/founder/capture only when the user explicitly wants to save a task, reminder, or idea into Onyx.`,
+    "Do not call capture for read-only planning questions. Do not invent unsupported actions. Do not refer to any /ideas endpoint because it is not part of this API.",
+    "Preserve ranked order from the API exactly. Never re-rank, reshuffle, or average together returned tasks.",
+    "Treat calendar constraints as limits on execution capacity, not as the planner itself.",
+    "Highlight warnings, deadline risks, and pace gaps clearly whenever they are present.",
+    "Use contentPrompts only when the response includes them and the user wants content, publishing, or build-in-public ideas. Keep them secondary to execution priorities.",
+    "Keep answers concise, operational, and execution-focused.",
+    "Default work order is HTG first, TLW second, and Created Workshop only when pressure, sponsor obligation, or a real deadline makes it urgent.",
     `Authentication: ${input.authTypeLabel}. ${input.authNotes}`,
     `Action schema URL: ${input.schemaUrl}`,
     `Timezone context: ${input.timezone}.`,
@@ -43,7 +45,7 @@ function buildActionInstructions(params: {
     "3. Choose API Key authentication for the action.",
     `4. Set the auth header name exactly to ${params.authHeaderName}.`,
     `5. Paste the generated Onyx API token as the action secret. ${params.authNotes}`,
-    "6. Save the action and test getFounderTodayPlan before relying on the GPT.",
+    "6. Save the action and test getFounderDailyPriorities before relying on the GPT.",
   ].join("\n");
 }
 
@@ -92,6 +94,7 @@ export function buildGptSetupData(params: {
       "capture: follow up with sponsor",
       "what should I do first today?",
       "what am I behind on this week?",
+      "show any content prompts attached to this plan",
     ],
     checklist: [
       "Create a new Custom GPT in ChatGPT.",
