@@ -64,20 +64,6 @@ export interface EncryptedSecretRecord {
   updatedBy: string;
 }
 
-export interface GptApiCredentialRecord {
-  id: string;
-  userId: string;
-  label: string;
-  tokenHash: string;
-  tokenLastFour: string;
-  status: "active" | "revoked";
-  createdAt: string;
-  updatedAt: string;
-  updatedBy: string;
-  lastUsedAt?: string;
-  revokedAt?: string;
-}
-
 export interface IntegrationConfigRecord extends AuditFields {
   userId: string;
   provider: IntegrationProvider;
@@ -274,41 +260,6 @@ export interface PlannerWeekResult {
   warnings: string[];
   contentPrompts: ContentPrompt[];
   generatedAt?: string;
-}
-
-export interface GptInstructionTemplateInput {
-  baseUrl: string;
-  schemaUrl: string;
-  authHeaderName: string;
-  authTypeLabel: string;
-  authNotes: string;
-  timezone: string;
-  displayName?: string;
-}
-
-export interface GptSetupData {
-  baseUrl: string;
-  schemaUrl: string;
-  schemaYamlUrl: string;
-  authType: string;
-  authHeaderName: string;
-  authNotes: string;
-  actionInstructions: string;
-  actionSchemaJson: string;
-  actionSchemaYaml: string;
-  instructions: string;
-  conversationStarters: string[];
-  checklist: string[];
-  sampleTodayResponse: PlannerTodayResult;
-  credential: {
-    label: string;
-    status: "active" | "revoked" | "missing";
-    tokenLastFour?: string;
-    createdAt?: string;
-    updatedAt?: string;
-    lastUsedAt?: string;
-    revokedAt?: string;
-  };
 }
 
 export interface PlanningSnapshot {
