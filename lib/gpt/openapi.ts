@@ -347,7 +347,7 @@ function buildSchemaComponents() {
           id: { type: "string", minLength: 1 },
           source: {
             type: "string",
-            enum: ["asana", "todoist", "google-sheets", "calendar"],
+            enum: ["asana", "todoist", "google-sheets"],
           },
           sourceId: { type: "string", minLength: 1 },
           sourceUrl: { type: "string", format: "uri" },
