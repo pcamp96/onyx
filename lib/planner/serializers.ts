@@ -75,6 +75,11 @@ export function toWeekApiResult(result: PlannerWeekResult): PlannerWeekApiResult
     summary: result.summary,
     primaryFocus: result.primaryFocus,
     rankedPriorities: overflow.visible.map(toRankedTaskPreview),
+    areaPriorities: {
+      HTG: result.areaPriorities.HTG.map(toRankedTaskPreview),
+      TLW: result.areaPriorities.TLW.map(toRankedTaskPreview),
+      CREATED_WORKSHOP: result.areaPriorities.CREATED_WORKSHOP.map(toRankedTaskPreview),
+    },
     rankedPrioritiesRemainingCount: overflow.remainingCount,
     rankedPrioritiesRemainingByArea: overflow.remainingByArea,
     deadlineRisks: result.deadlineRisks,

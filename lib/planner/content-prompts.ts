@@ -318,6 +318,10 @@ function buildArticleSignals(articleEntries: NormalizedArticleEntry[]): PromptSi
   }));
 }
 
+function excludeHtgTasks(tasks: RankedTask[]) {
+  return tasks.filter((task) => task.area !== "HTG");
+}
+
 function buildFallbackSignals(command: ContentPromptCommand): PromptSignal[] {
   const categoryProject = PROJECT_FALLBACK_ROTATION.map((projectKey, index) => {
     const project = PROJECTS.find((entry) => entry.key === projectKey);
@@ -371,11 +375,11 @@ export function generateContentPrompts(input: {
   articleEntries?: NormalizedArticleEntry[];
   primaryFocus: string;
 }): ContentPrompt[] {
+  const contentTasks = excludeHtgTasks(input.rankedTasks);
   const signals = dedupeSignals([
-    ...buildTaskSignals(input.rankedTasks),
-    ...buildWarningSignals(input.warnings, input.rankedTasks),
-    ...buildSummarySignals(input.summary, input.rankedTasks),
-    ...buildArticleSignals(input.articleEntries ?? []),
+    ...buildTaskSignals(contentTasks),
+    ...buildWarningSignals(input.warnings, contentTasks),
+    ...buildSummarySignals(input.summary, contentTasks),
     ...buildFallbackSignals(input.command),
   ]).sort((left, right) => right.score - left.score);
 
@@ -386,7 +390,7 @@ export function generateContentPrompts(input: {
   const usedProjects = new Set<string>();
   const usedCategories = new Set<ContentPromptCategory>();
   const prompts: ContentPrompt[] = [];
-  const topTask = input.rankedTasks[0];
+  const topTask = contentTasks[0];
 
   for (const template of templates) {
     const signal = signals.find((candidate) => {

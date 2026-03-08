@@ -202,6 +202,55 @@ const sampleWeekResponse: PlannerWeekApiResult = {
       reason: "Created Workshop is elevated because a sponsor obligation is approaching.",
     },
   ],
+  areaPriorities: {
+    HTG: [
+      {
+        id: "task-1",
+        source: "todoist",
+        sourceId: "task-1",
+        sourceUrl: "https://app.todoist.com/app/task/123",
+        area: "HTG",
+        title: "Draft Chromebook roundup",
+        status: "open",
+        dueDate: "2026-03-07",
+        isOverdue: false,
+        isBlocked: false,
+        rank: 1,
+        reason: "HTG output is still below weekly pace and this task has strong business impact.",
+      },
+    ],
+    TLW: [
+      {
+        id: "task-2",
+        source: "todoist",
+        sourceId: "task-2",
+        sourceUrl: "https://app.todoist.com/app/task/456",
+        area: "TLW",
+        title: "Review quote funnel friction notes",
+        status: "open",
+        dueDate: "2026-03-08",
+        isOverdue: false,
+        isBlocked: false,
+        rank: 4,
+        reason: "TLW still needs steady product and marketing follow-through this week.",
+      },
+    ],
+    CREATED_WORKSHOP: [
+      {
+        id: "task-3",
+        source: "asana",
+        sourceId: "task-3",
+        area: "CREATED_WORKSHOP",
+        title: "Prep sponsor revision notes",
+        status: "open",
+        dueDate: "2026-03-09T16:00:00.000Z",
+        isOverdue: false,
+        isBlocked: false,
+        rank: 2,
+        reason: "Created Workshop is elevated because a sponsor obligation is approaching.",
+      },
+    ],
+  },
   rankedPrioritiesRemainingCount: 4,
   rankedPrioritiesRemainingByArea: {
     HTG: 4,
@@ -598,6 +647,7 @@ function buildSchemaComponents() {
           "summary",
           "primaryFocus",
           "rankedPriorities",
+          "areaPriorities",
           "rankedPrioritiesRemainingCount",
           "deadlineRisks",
           "warnings",
@@ -611,6 +661,25 @@ function buildSchemaComponents() {
           rankedPriorities: {
             type: "array",
             items: { $ref: "#/components/schemas/RankedTaskPreview" },
+          },
+          areaPriorities: {
+            type: "object",
+            additionalProperties: false,
+            required: ["HTG", "TLW", "CREATED_WORKSHOP"],
+            properties: {
+              HTG: {
+                type: "array",
+                items: { $ref: "#/components/schemas/RankedTaskPreview" },
+              },
+              TLW: {
+                type: "array",
+                items: { $ref: "#/components/schemas/RankedTaskPreview" },
+              },
+              CREATED_WORKSHOP: {
+                type: "array",
+                items: { $ref: "#/components/schemas/RankedTaskPreview" },
+              },
+            },
           },
           rankedPrioritiesRemainingCount: {
             type: "integer",

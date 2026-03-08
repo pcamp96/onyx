@@ -114,6 +114,7 @@ describe("content prompts", () => {
     expect(prompts.some((prompt) => prompt.project === "Onyx")).toBe(true);
     expect(prompts.some((prompt) => prompt.project === "The Laser Workshop")).toBe(true);
     expect(prompts.some((prompt) => prompt.project === "Unbrella")).toBe(true);
+    expect(prompts.every((prompt) => !prompt.prompt.includes("How-To Geek"))).toBe(true);
     expect(prompts.every((prompt) => prompt.prompt.length > 40)).toBe(true);
   });
 
@@ -131,6 +132,7 @@ describe("content prompts", () => {
     expect(prompts.some((prompt) => prompt.category === "Story")).toBe(true);
     expect(prompts.some((prompt) => prompt.category === "Founder reflection")).toBe(true);
     expect(prompts.some((prompt) => prompt.category === "Vision")).toBe(true);
+    expect(prompts.every((prompt) => !prompt.prompt.includes("How-To Geek"))).toBe(true);
   });
 
   it("supports idea-oriented prompt generation for downstream /ideas rendering", () => {
@@ -147,5 +149,6 @@ describe("content prompts", () => {
     expect(prompts.some((prompt) => prompt.category === "Problem/Solution")).toBe(true);
     expect(prompts.some((prompt) => prompt.category === "Curiosity/question")).toBe(true);
     expect(prompts.some((prompt) => prompt.project === "Onyx" || prompt.project === "The Laser Workshop" || prompt.project === "Unbrella")).toBe(true);
+    expect(prompts.every((prompt) => !prompt.prompt.includes("How-To Geek"))).toBe(true);
   });
 });

@@ -7,6 +7,16 @@ import { summarizeArticles } from "@/lib/planner/normalizers";
 import { endOfWeek, startOfWeek, toIsoDate } from "@/lib/utils/time";
 import type { PlannerAggregateInput } from "@/lib/planner/types";
 
+const WEEKLY_AREA_LIMIT = 3;
+
+function buildAreaPriorities(rankedPriorities: RankedTask[]) {
+  return {
+    HTG: rankedPriorities.filter((task) => task.area === "HTG").slice(0, WEEKLY_AREA_LIMIT),
+    TLW: rankedPriorities.filter((task) => task.area === "TLW").slice(0, WEEKLY_AREA_LIMIT),
+    CREATED_WORKSHOP: rankedPriorities.filter((task) => task.area === "CREATED_WORKSHOP").slice(0, WEEKLY_AREA_LIMIT),
+  };
+}
+
 export function buildWeekPlan(input: PlannerAggregateInput, settings: PlannerSettings, now: Date): PlannerWeekResult {
   const summary = summarizeArticles(input.articleEntries, settings, now);
   const weeklyPaceGap = summary.remainingToGoal;
@@ -33,6 +43,7 @@ export function buildWeekPlan(input: PlannerAggregateInput, settings: PlannerSet
     summary,
     primaryFocus,
     rankedPriorities,
+    areaPriorities: buildAreaPriorities(rankedPriorities),
     deadlineRisks: warnings,
     warnings,
     contentPrompts: generateContentPrompts({

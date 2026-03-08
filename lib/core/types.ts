@@ -382,6 +382,11 @@ export interface PlannerWeekResult {
   summary: PlannerSummary;
   primaryFocus: string;
   rankedPriorities: RankedTask[];
+  areaPriorities: {
+    HTG: RankedTask[];
+    TLW: RankedTask[];
+    CREATED_WORKSHOP: RankedTask[];
+  };
   deadlineRisks: string[];
   warnings: string[];
   contentPrompts: ContentPrompt[];
@@ -394,6 +399,11 @@ export interface PlannerWeekApiResult {
   summary: PlannerSummary;
   primaryFocus: string;
   rankedPriorities: RankedTaskPreview[];
+  areaPriorities: {
+    HTG: RankedTaskPreview[];
+    TLW: RankedTaskPreview[];
+    CREATED_WORKSHOP: RankedTaskPreview[];
+  };
   rankedPrioritiesRemainingCount: number;
   rankedPrioritiesRemainingByArea: Partial<Record<WorkArea, number>>;
   deadlineRisks: string[];

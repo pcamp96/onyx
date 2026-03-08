@@ -4,6 +4,7 @@ import type { NormalizedTask, PlannerSettings } from "@/lib/core/types";
 import { getBlockingCalendarEvents } from "@/lib/planner/calendar";
 import { buildTodayPlan } from "@/lib/planner/today";
 import { buildTlwOperatorPlan } from "@/lib/planner/tlw-operator";
+import { buildWeekPlan } from "@/lib/planner/week";
 
 const settings: PlannerSettings = {
   userId: "founder",
@@ -516,5 +517,71 @@ describe("today planner", () => {
     expect(plan.topTasks).toHaveLength(3);
     expect(plan.marketingAction.title).toContain("Threads");
     expect(plan.quickRead[0]).toContain("7 new users");
+  });
+
+  it("builds weekly priorities for HTG, TLW, and Created Workshop separately", () => {
+    const plan = buildWeekPlan(
+      {
+        tasks: [
+          {
+            id: "htg-1",
+            source: "asana",
+            sourceId: "1",
+            area: "HTG",
+            title: "Finish overdue HTG draft",
+            status: "open",
+            isOverdue: true,
+            isBlocked: false,
+            dueDate: "2026-03-06",
+          },
+          {
+            id: "tlw-1",
+            source: "todoist",
+            sourceId: "2",
+            area: "TLW",
+            title: "Fix TLW onboarding bottleneck",
+            status: "open",
+            isOverdue: false,
+            isBlocked: false,
+            dueDate: "2026-03-07",
+            businessImpact: 10,
+          },
+          {
+            id: "cw-1",
+            source: "todoist",
+            sourceId: "3",
+            area: "CREATED_WORKSHOP",
+            title: "Prepare sponsor deliverable",
+            status: "open",
+            isOverdue: false,
+            isBlocked: false,
+            sponsorRisk: true,
+            dueDate: "2026-03-09",
+          },
+        ],
+        calendarEvents: [],
+        articleEntries: [],
+        warnings: [],
+        debugRecord: {
+          date: "2026-03-06",
+          generatedAt: "2026-03-06T12:00:00.000Z",
+          providerSummaries: {},
+          normalizedInputPreview: {
+            tasks: [],
+            calendarEvents: [],
+            articleEntries: [],
+          },
+        },
+      },
+      settings,
+      new Date("2026-03-06T12:00:00.000Z"),
+    );
+
+    expect(plan.areaPriorities.HTG).toHaveLength(1);
+    expect(plan.areaPriorities.HTG[0]?.area).toBe("HTG");
+    expect(plan.areaPriorities.TLW).toHaveLength(1);
+    expect(plan.areaPriorities.TLW[0]?.area).toBe("TLW");
+    expect(plan.areaPriorities.CREATED_WORKSHOP).toHaveLength(1);
+    expect(plan.areaPriorities.CREATED_WORKSHOP[0]?.area).toBe("CREATED_WORKSHOP");
   });
 });

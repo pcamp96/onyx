@@ -103,6 +103,7 @@ export function buildDefaultGptSetupPreferences(userId: string, updatedBy: strin
       "Use /today for near-term content prompts tied to current execution.",
       "Use /week for broader weekly themes.",
       "Use contentPrompts when present.",
+      "Exclude HTG from content, build-in-public, and marketing ideas. HTG is a writing gig, not a public-facing growth surface.",
       "Keep content ideas secondary to execution priorities unless the user explicitly asks only for content ideas.",
     ],
     externalApiRules: [
