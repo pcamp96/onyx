@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 
+import { toWeekApiResult } from "@/lib/planner/serializers";
 import { getWeekPlan } from "@/lib/planner/service";
 import { requireFounderApiAccess } from "@/lib/utils/auth";
 import { ok, unauthorized } from "@/lib/utils/http";
@@ -11,5 +12,5 @@ export async function GET(request: NextRequest) {
   }
 
   const result = await getWeekPlan(new Date(), session.uid);
-  return ok(result);
+  return ok(toWeekApiResult(result));
 }

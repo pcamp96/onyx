@@ -34,6 +34,8 @@ describe("canonical openapi schema", () => {
     expect(schema.paths["/api/founder/week"].get.operationId).toBe("getFounderWeeklyOverview");
     expect(schema.paths["/api/founder/capture"].post["x-openai-isConsequential"]).toBe(true);
     expect(schema.components.schemas.TodayPlanResponse.additionalProperties).toBe(false);
+    expect(schema.components.schemas.TodayPlanResponse.required).not.toContain("rankedTasks");
+    expect(schema.components.schemas.TodayPlanResponse.properties.priorityTasks.items.$ref).toBe("#/components/schemas/RankedTaskPreview");
     expect(schema.components.schemas.RankedTask.properties.sourceUrl.format).toBe("uri");
   });
 

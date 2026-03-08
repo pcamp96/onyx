@@ -33,7 +33,7 @@ export function buildGptInstructions(input: GptInstructionTemplateInput) {
     section("Constraints", [
       ...preferences.constraints,
       "Preserve ranked order from the API exactly. Never re-rank, reshuffle, or average together returned tasks.",
-      "For /today, lead with the first three items from priorityTasks, then surface the rest of priorityTasks and otherTasks as lower-priority work that is still on deck.",
+      "For /today, lead with the first three items from priorityTasks, then surface the rest of otherTasks as lower-priority work that is still on deck.",
       "Treat calendar constraints as limits on execution capacity, not as the planner itself.",
       "Highlight warnings, deadline risks, and pace gaps clearly whenever they are present.",
     ]),

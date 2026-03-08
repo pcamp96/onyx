@@ -252,12 +252,41 @@ export interface PlannerTodayResult {
   generatedAt?: string;
 }
 
+export type RankedTaskPreview = Pick<
+  RankedTask,
+  "id" | "source" | "sourceId" | "sourceUrl" | "area" | "title" | "status" | "dueDate" | "isOverdue" | "isBlocked" | "rank" | "reason"
+>;
+
+export interface PlannerTodayApiResult {
+  date: string;
+  summary: PlannerSummary;
+  calendarConstraints: NormalizedCalendarEvent[];
+  primaryFocus: string;
+  priorityTasks: RankedTaskPreview[];
+  otherTasks: RankedTaskPreview[];
+  warnings: string[];
+  contentPrompts: ContentPrompt[];
+  generatedAt?: string;
+}
+
 export interface PlannerWeekResult {
   weekStart: string;
   weekEnd: string;
   summary: PlannerSummary;
   primaryFocus: string;
   rankedPriorities: RankedTask[];
+  deadlineRisks: string[];
+  warnings: string[];
+  contentPrompts: ContentPrompt[];
+  generatedAt?: string;
+}
+
+export interface PlannerWeekApiResult {
+  weekStart: string;
+  weekEnd: string;
+  summary: PlannerSummary;
+  primaryFocus: string;
+  rankedPriorities: RankedTaskPreview[];
   deadlineRisks: string[];
   warnings: string[];
   contentPrompts: ContentPrompt[];
@@ -273,6 +302,15 @@ export interface PlannerIdeasResult {
     RankedTask,
     "id" | "source" | "sourceId" | "sourceUrl" | "area" | "title" | "status" | "dueDate" | "isOverdue" | "isBlocked" | "score" | "rank" | "reason" | "scoreBreakdown"
   >[];
+  generatedAt?: string;
+}
+
+export interface PlannerIdeasApiResult {
+  summary: PlannerSummary;
+  primaryFocus: string;
+  contentPrompts: ContentPrompt[];
+  warnings: string[];
+  rankedContext: RankedTaskPreview[];
   generatedAt?: string;
 }
 

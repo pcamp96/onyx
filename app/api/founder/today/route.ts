@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 
+import { toTodayApiResult } from "@/lib/planner/serializers";
 import { getTodayPlan } from "@/lib/planner/service";
 import { requireFounderApiAccess } from "@/lib/utils/auth";
 import { ok, unauthorized } from "@/lib/utils/http";
@@ -11,5 +12,5 @@ export async function GET(request: NextRequest) {
   }
 
   const result = await getTodayPlan(new Date(), session.uid);
-  return ok(result);
+  return ok(toTodayApiResult(result));
 }

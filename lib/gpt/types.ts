@@ -1,4 +1,4 @@
-import type { PlannerSettings, PlannerTodayResult } from "@/lib/core/types";
+import type { PlannerSettings, PlannerTodayApiResult } from "@/lib/core/types";
 
 export interface GptApiCredentialRecord {
   id: string;
@@ -64,7 +64,7 @@ export interface GptSetupData {
   instructions: string;
   conversationStarters: string[];
   checklist: string[];
-  sampleTodayResponse: PlannerTodayResult;
+  sampleTodayResponse: PlannerTodayApiResult;
   preferences: GptSetupPreferences;
   credential: {
     label: string;
