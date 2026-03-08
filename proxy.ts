@@ -4,7 +4,15 @@ import type { NextRequest } from "next/server";
 import { SESSION_COOKIE_NAME } from "@/lib/core/constants";
 
 const PUBLIC_PATHS = ["/login", "/health", "/api/auth/session", "/api/auth/logout", "/api/openapi.json", "/api/openapi.yaml"];
-const TOKEN_AUTH_API_PATHS = ["/api/founder/today", "/api/founder/week", "/api/founder/capture"];
+const TOKEN_AUTH_API_PATHS = [
+  "/api/founder/today",
+  "/api/founder/week",
+  "/api/founder/ideas",
+  "/api/founder/capture",
+  "/api/founder/tlw/snapshot",
+  "/api/founder/tlw/analytics",
+  "/api/founder/tlw/overview",
+];
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;

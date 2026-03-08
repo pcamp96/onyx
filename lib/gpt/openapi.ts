@@ -202,6 +202,10 @@ const sampleWeekResponse: PlannerWeekApiResult = {
       reason: "Created Workshop is elevated because a sponsor obligation is approaching.",
     },
   ],
+  rankedPrioritiesRemainingCount: 4,
+  rankedPrioritiesRemainingByArea: {
+    HTG: 4,
+  },
   deadlineRisks: ["Sponsor obligation is approaching for Prep sponsor revision notes."],
   warnings: [
     "One article remains to hit the weekly minimum.",
@@ -264,6 +268,8 @@ const sampleIdeasResponse: PlannerIdeasApiResult = {
   ],
   warnings: ["One article remains to hit the weekly minimum."],
   rankedContext: sampleWeekResponse.rankedPriorities,
+  rankedContextRemainingCount: 0,
+  rankedContextRemainingByArea: {},
   generatedAt: "2026-03-07T14:05:00.000Z",
 };
 
@@ -592,6 +598,7 @@ function buildSchemaComponents() {
           "summary",
           "primaryFocus",
           "rankedPriorities",
+          "rankedPrioritiesRemainingCount",
           "deadlineRisks",
           "warnings",
           "generatedAt",
@@ -604,6 +611,20 @@ function buildSchemaComponents() {
           rankedPriorities: {
             type: "array",
             items: { $ref: "#/components/schemas/RankedTaskPreview" },
+          },
+          rankedPrioritiesRemainingCount: {
+            type: "integer",
+            minimum: 0,
+          },
+          rankedPrioritiesRemainingByArea: {
+            type: "object",
+            additionalProperties: false,
+            properties: {
+              HTG: { type: "integer", minimum: 0 },
+              TLW: { type: "integer", minimum: 0 },
+              CREATED_WORKSHOP: { type: "integer", minimum: 0 },
+              ADMIN: { type: "integer", minimum: 0 },
+            },
           },
           deadlineRisks: {
             type: "array",
@@ -623,7 +644,7 @@ function buildSchemaComponents() {
       IdeasPlanResponse: {
         type: "object",
         additionalProperties: false,
-        required: ["summary", "primaryFocus", "contentPrompts", "warnings", "rankedContext", "generatedAt"],
+        required: ["summary", "primaryFocus", "contentPrompts", "warnings", "rankedContext", "rankedContextRemainingCount", "generatedAt"],
         properties: {
           summary: { $ref: "#/components/schemas/PlannerSummary" },
           primaryFocus: { type: "string", minLength: 1 },
@@ -638,6 +659,20 @@ function buildSchemaComponents() {
           rankedContext: {
             type: "array",
             items: { $ref: "#/components/schemas/RankedTaskPreview" },
+          },
+          rankedContextRemainingCount: {
+            type: "integer",
+            minimum: 0,
+          },
+          rankedContextRemainingByArea: {
+            type: "object",
+            additionalProperties: false,
+            properties: {
+              HTG: { type: "integer", minimum: 0 },
+              TLW: { type: "integer", minimum: 0 },
+              CREATED_WORKSHOP: { type: "integer", minimum: 0 },
+              ADMIN: { type: "integer", minimum: 0 },
+            },
           },
           generatedAt: { type: "string", format: "date-time" },
         },

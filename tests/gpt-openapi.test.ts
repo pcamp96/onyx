@@ -45,6 +45,8 @@ describe("canonical openapi schema", () => {
     expect(schema.components.schemas.TodayPlanResponse.properties.tomorrowTasks.items.$ref).toBe("#/components/schemas/RankedTaskPreview");
     expect(schema.components.schemas.TodayPlanResponse.properties.otherTasksRemainingCount.type).toBe("integer");
     expect(schema.components.schemas.TodayPlanResponse.properties.tlwOperatorPlan.$ref).toBe("#/components/schemas/TlwOperatorPlan");
+    expect(schema.components.schemas.WeekPlanResponse.properties.rankedPrioritiesRemainingCount.type).toBe("integer");
+    expect(schema.components.schemas.IdeasPlanResponse.properties.rankedContextRemainingCount.type).toBe("integer");
     expect(schema.components.schemas.RankedTask.properties.sourceUrl.format).toBe("uri");
   });
 

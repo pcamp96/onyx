@@ -394,6 +394,8 @@ export interface PlannerWeekApiResult {
   summary: PlannerSummary;
   primaryFocus: string;
   rankedPriorities: RankedTaskPreview[];
+  rankedPrioritiesRemainingCount: number;
+  rankedPrioritiesRemainingByArea: Partial<Record<WorkArea, number>>;
   deadlineRisks: string[];
   warnings: string[];
   contentPrompts: ContentPrompt[];
@@ -418,6 +420,8 @@ export interface PlannerIdeasApiResult {
   contentPrompts: ContentPrompt[];
   warnings: string[];
   rankedContext: RankedTaskPreview[];
+  rankedContextRemainingCount: number;
+  rankedContextRemainingByArea: Partial<Record<WorkArea, number>>;
   generatedAt?: string;
 }
 

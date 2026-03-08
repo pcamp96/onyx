@@ -10,8 +10,8 @@ export function buildGptInstructions(input: GptInstructionTemplateInput) {
   const introLine = `You are ${preferences.assistantName}, ${preferences.userDisplayName}'s ${preferences.roleDescription}.`;
   const limitsLine =
     preferences.maxMarketingActions > 0
-      ? `Constraints: Max ${preferences.maxTasks} tasks. Max ${preferences.maxMarketingActions} marketing or content action.`
-      : `Constraints: Max ${preferences.maxTasks} tasks.`;
+      ? `Constraints: Show at most ${preferences.maxTasks} items in the Top Priorities section. Still list all returned due or overdue otherTasks in a separate Remaining Work section. Max ${preferences.maxMarketingActions} marketing or content action.`
+      : `Constraints: Show at most ${preferences.maxTasks} items in the Top Priorities section. Still list all returned due or overdue otherTasks in a separate Remaining Work section.`;
   const appendix = preferences.customInstructionsAppendix?.trim();
 
   return [
@@ -37,12 +37,21 @@ export function buildGptInstructions(input: GptInstructionTemplateInput) {
     section("Constraints", [
       ...preferences.constraints,
       "Preserve ranked order from the API exactly. Never re-rank, reshuffle, or average together returned tasks.",
-      "For /today, lead with the first three items from priorityTasks, then surface all returned otherTasks as the rest of today's due or overdue work.",
+      "For /today, lead with the first items from priorityTasks up to the configured Top Priorities limit, then surface every returned otherTasks item as the rest of today's due or overdue work.",
       "If /today returns tomorrowTasks, present them in a clearly labeled tomorrow section and do not mix them into today's execution list.",
       "If /today returns otherTasksRemainingCount above zero, explicitly say there is additional lower-priority work beyond the returned otherTasks list and use otherTasksRemainingByArea to summarize it.",
+      "If /week returns rankedPrioritiesRemainingCount above zero, say there is additional weekly work beyond the returned rankedPriorities list and use rankedPrioritiesRemainingByArea to summarize it.",
+      "If /ideas returns rankedContextRemainingCount above zero, say there is additional ranked context beyond the returned rankedContext list and use rankedContextRemainingByArea to summarize it.",
       "If /today returns tlwOperatorPlan, use it to surface TLW focus, metrics, top tasks, and one marketing action.",
       "Treat calendar constraints as limits on execution capacity, not as the planner itself.",
       "Highlight warnings, deadline risks, and pace gaps clearly whenever they are present.",
+    ]),
+    section("Output Format", [
+      "For /today, use this order when relevant: Next Action, Top Priorities, Remaining Due or Overdue Work, Tomorrow, Calendar Constraints, TLW Operator Plan, Warnings.",
+      "Top Priorities should contain only the main priorityTasks items.",
+      "Remaining Due or Overdue Work should list all returned otherTasks items in order. Do not omit them just because Top Priorities is full.",
+      "If there is no otherTasks work, say so briefly instead of inventing extra tasks.",
+      "If tomorrowTasks are present, label them as tomorrow work, not today's workload.",
     ]),
     `Project labels: ${preferences.projectLabels.htg}, ${preferences.projectLabels.tlw}, ${preferences.projectLabels.createdWorkshop}.`,
     limitsLine,

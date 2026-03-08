@@ -28,23 +28,26 @@ function toRankedTaskPreview(task: RankedTask): RankedTaskPreview {
 }
 
 const MAX_OTHER_TASKS = 100;
+const MAX_WEEK_PRIORITIES = 12;
+const MAX_IDEAS_CONTEXT = 6;
 
-function summarizeOverflowTasks(tasks: RankedTask[]) {
-  const overflow = tasks.slice(MAX_OTHER_TASKS);
+function summarizeOverflowTasks<T extends { area: WorkArea }>(tasks: T[], visibleCount: number) {
+  const visible = tasks.slice(0, visibleCount);
+  const overflow = tasks.slice(visibleCount);
   const byArea = overflow.reduce<Partial<Record<WorkArea, number>>>((acc, task) => {
     acc[task.area] = (acc[task.area] ?? 0) + 1;
     return acc;
   }, {});
 
   return {
-    visible: tasks.slice(0, MAX_OTHER_TASKS),
+    visible,
     remainingCount: overflow.length,
     remainingByArea: byArea,
   };
 }
 
 export function toTodayApiResult(result: PlannerTodayResult): PlannerTodayApiResult {
-  const overflow = summarizeOverflowTasks(result.otherTasks);
+  const overflow = summarizeOverflowTasks(result.otherTasks, MAX_OTHER_TASKS);
 
   return {
     date: result.date,
@@ -64,12 +67,16 @@ export function toTodayApiResult(result: PlannerTodayResult): PlannerTodayApiRes
 }
 
 export function toWeekApiResult(result: PlannerWeekResult): PlannerWeekApiResult {
+  const overflow = summarizeOverflowTasks(result.rankedPriorities, MAX_WEEK_PRIORITIES);
+
   return {
     weekStart: result.weekStart,
     weekEnd: result.weekEnd,
     summary: result.summary,
     primaryFocus: result.primaryFocus,
-    rankedPriorities: result.rankedPriorities.map(toRankedTaskPreview),
+    rankedPriorities: overflow.visible.map(toRankedTaskPreview),
+    rankedPrioritiesRemainingCount: overflow.remainingCount,
+    rankedPrioritiesRemainingByArea: overflow.remainingByArea,
     deadlineRisks: result.deadlineRisks,
     warnings: result.warnings,
     contentPrompts: result.contentPrompts,
@@ -78,12 +85,16 @@ export function toWeekApiResult(result: PlannerWeekResult): PlannerWeekApiResult
 }
 
 export function toIdeasApiResult(result: PlannerIdeasResult): PlannerIdeasApiResult {
+  const overflow = summarizeOverflowTasks(result.rankedContext, MAX_IDEAS_CONTEXT);
+
   return {
     summary: result.summary,
     primaryFocus: result.primaryFocus,
     contentPrompts: result.contentPrompts,
     warnings: result.warnings,
-    rankedContext: result.rankedContext.map(toRankedTaskPreview),
+    rankedContext: overflow.visible.map(toRankedTaskPreview),
+    rankedContextRemainingCount: overflow.remainingCount,
+    rankedContextRemainingByArea: overflow.remainingByArea,
     generatedAt: result.generatedAt,
   };
 }

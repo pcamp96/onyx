@@ -60,6 +60,10 @@ describe("gpt setup generator", () => {
     expect(setup.instructions).toContain("Never ask the user for the TLW token.");
     expect(setup.instructions).toContain("If /today returns tlwOperatorPlan");
     expect(setup.instructions).toContain("If /today returns tomorrowTasks");
+    expect(setup.instructions).toContain("Remaining Due or Overdue Work");
+    expect(setup.instructions).toContain("Do not omit them just because Top Priorities is full.");
+    expect(setup.instructions).toContain("If /week returns rankedPrioritiesRemainingCount above zero");
+    expect(setup.instructions).toContain("If /ideas returns rankedContextRemainingCount above zero");
     expect(setup.actionInstructions).toContain("add a new custom action");
     expect(setup.actionInstructions).toContain("getFounderDailyPriorities");
     expect(setup.actionSchemaYaml).toContain("openapi: 3.1.0");

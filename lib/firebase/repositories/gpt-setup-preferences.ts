@@ -86,7 +86,7 @@ export function buildDefaultGptSetupPreferences(userId: string, updatedBy: strin
     responseStyleRules: [
       "Lead with the next best action.",
       "Keep answers concise, operational, and execution-focused.",
-      "When useful, show top priorities, why they matter, and key risks.",
+      "When useful, show top priorities, the remaining due or overdue workload, why the priorities matter, and key risks.",
     ],
     priorityRules: [
       "Preserve ranked order from the API exactly.",
