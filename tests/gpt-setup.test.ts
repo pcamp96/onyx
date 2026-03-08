@@ -59,6 +59,7 @@ describe("gpt setup generator", () => {
     expect(setup.instructions).toContain("External API Rules");
     expect(setup.instructions).toContain("Never ask the user for the TLW token.");
     expect(setup.instructions).toContain("If /today returns tlwOperatorPlan");
+    expect(setup.instructions).toContain("If /today returns tomorrowTasks");
     expect(setup.actionInstructions).toContain("add a new custom action");
     expect(setup.actionInstructions).toContain("getFounderDailyPriorities");
     expect(setup.actionSchemaYaml).toContain("openapi: 3.1.0");

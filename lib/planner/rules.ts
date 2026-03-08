@@ -19,7 +19,7 @@ export function derivePrimaryFocus(tasks: NormalizedTask[]) {
   return "Admin cleanup";
 }
 
-export function deriveWarnings(tasks: NormalizedTask[], settings: PlannerSettings) {
+export function deriveWarnings(tasks: NormalizedTask[], settings: PlannerSettings, now = new Date()) {
   const warnings: string[] = [];
   const sponsorRiskTask = tasks.find((task) => task.sponsorRisk);
   if (sponsorRiskTask) {
@@ -27,7 +27,7 @@ export function deriveWarnings(tasks: NormalizedTask[], settings: PlannerSetting
   }
 
   const urgentCreatedWorkshop = tasks.find((task) => {
-    const days = daysUntil(task.dueDate);
+    const days = daysUntil(task.dueDate, now);
     return task.area === "CREATED_WORKSHOP" && days !== null && days <= settings.sponsorUrgencyDays;
   });
   if (urgentCreatedWorkshop) {

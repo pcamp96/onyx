@@ -27,7 +27,7 @@ function toRankedTaskPreview(task: RankedTask): RankedTaskPreview {
   };
 }
 
-const MAX_OTHER_TASKS = 12;
+const MAX_OTHER_TASKS = 100;
 
 function summarizeOverflowTasks(tasks: RankedTask[]) {
   const overflow = tasks.slice(MAX_OTHER_TASKS);
@@ -53,10 +53,12 @@ export function toTodayApiResult(result: PlannerTodayResult): PlannerTodayApiRes
     primaryFocus: result.primaryFocus,
     priorityTasks: result.priorityTasks.map(toRankedTaskPreview),
     otherTasks: overflow.visible.map(toRankedTaskPreview),
+    tomorrowTasks: result.tomorrowTasks.map(toRankedTaskPreview),
     otherTasksRemainingCount: overflow.remainingCount,
     otherTasksRemainingByArea: overflow.remainingByArea,
     warnings: result.warnings,
     contentPrompts: result.contentPrompts,
+    tlwOperatorPlan: result.tlwOperatorPlan,
     generatedAt: result.generatedAt,
   };
 }

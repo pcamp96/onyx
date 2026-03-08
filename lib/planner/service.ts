@@ -244,6 +244,7 @@ export async function getIdeasPlan(now = new Date(), userId = FOUNDER_USER_ID): 
       settings,
       weeklyPaceGap,
       calendarConstraints: calendarEvents,
+      now,
     }))
     .sort((left, right) => right.score - left.score)
     .slice(0, Math.max(settings.maxTodayTasks, 6))
@@ -251,7 +252,7 @@ export async function getIdeasPlan(now = new Date(), userId = FOUNDER_USER_ID): 
       ...task,
       rank: index + 1,
     }));
-  const warnings = [...new Set([...aggregate.warnings, ...deriveWarnings(rankedContext, settings)])];
+  const warnings = [...new Set([...aggregate.warnings, ...deriveWarnings(rankedContext, settings, now)])];
   const primaryFocus = derivePrimaryFocus(rankedContext);
 
   return {

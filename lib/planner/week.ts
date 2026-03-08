@@ -16,6 +16,7 @@ export function buildWeekPlan(input: PlannerAggregateInput, settings: PlannerSet
       settings,
       weeklyPaceGap,
       calendarConstraints: input.calendarEvents,
+      now,
     }))
     .sort((left, right) => right.score - left.score)
     .map((task, index): RankedTask => ({
@@ -23,7 +24,7 @@ export function buildWeekPlan(input: PlannerAggregateInput, settings: PlannerSet
       rank: index + 1,
     }));
 
-  const warnings = [...new Set([...input.warnings, ...deriveWarnings(rankedPriorities, settings)])];
+  const warnings = [...new Set([...input.warnings, ...deriveWarnings(rankedPriorities, settings, now)])];
   const primaryFocus = derivePrimaryFocus(rankedPriorities);
 
   return {

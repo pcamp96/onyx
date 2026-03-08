@@ -79,6 +79,21 @@ const sampleTodayResponse: PlannerTodayApiResult = {
       reason: "This has the strongest execution value right now.",
     },
   ],
+  tomorrowTasks: [
+    {
+      id: "task-4",
+      source: "todoist",
+      sourceId: "task-4",
+      area: "TLW",
+      title: "Review new quote funnel experiment",
+      status: "open",
+      dueDate: "2026-03-08",
+      isOverdue: false,
+      isBlocked: false,
+      rank: 4,
+      reason: "This is due tomorrow and should be planned for next.",
+    },
+  ],
   otherTasksRemainingCount: 4,
   otherTasksRemainingByArea: {
     HTG: 2,
@@ -521,7 +536,7 @@ function buildSchemaComponents() {
       TodayPlanResponse: {
         type: "object",
         additionalProperties: false,
-        required: ["date", "summary", "calendarConstraints", "primaryFocus", "priorityTasks", "otherTasks", "warnings", "generatedAt"],
+        required: ["date", "summary", "calendarConstraints", "primaryFocus", "priorityTasks", "otherTasks", "tomorrowTasks", "warnings", "generatedAt"],
         properties: {
           date: { type: "string", format: "date" },
           summary: { $ref: "#/components/schemas/PlannerSummary" },
@@ -535,6 +550,10 @@ function buildSchemaComponents() {
             items: { $ref: "#/components/schemas/RankedTaskPreview" },
           },
           otherTasks: {
+            type: "array",
+            items: { $ref: "#/components/schemas/RankedTaskPreview" },
+          },
+          tomorrowTasks: {
             type: "array",
             items: { $ref: "#/components/schemas/RankedTaskPreview" },
           },

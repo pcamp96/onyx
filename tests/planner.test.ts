@@ -77,7 +77,7 @@ describe("today planner", () => {
     expect(plan.primaryFocus).toBe("How-To Geek output");
   });
 
-  it("keeps cross-area visibility while preserving the full ranked backlog", () => {
+  it("keeps cross-area visibility while separating tomorrow work", () => {
     const plan = buildTodayPlan(
       {
         tasks: [
@@ -188,12 +188,13 @@ describe("today planner", () => {
       new Date("2026-03-06T12:00:00.000Z"),
     );
 
-    expect(plan.priorityTasks).toHaveLength(5);
-    expect(plan.priorityTasks.some((task) => task.area === "TLW")).toBe(true);
-    expect(plan.priorityTasks.some((task) => task.area === "CREATED_WORKSHOP")).toBe(true);
+    expect(plan.priorityTasks).toHaveLength(3);
     expect(plan.priorityTasks[0]?.area).toBe("HTG");
-    expect(plan.otherTasks.length).toBeGreaterThan(0);
-    expect(plan.rankedTasks.length).toBe(7);
+    expect(plan.priorityTasks.some((task) => task.area === "CREATED_WORKSHOP")).toBe(true);
+    expect(plan.otherTasks).toHaveLength(0);
+    expect(plan.tomorrowTasks.some((task) => task.area === "TLW")).toBe(true);
+    expect(plan.tomorrowTasks.some((task) => task.area === "HTG")).toBe(true);
+    expect(plan.rankedTasks.length).toBe(3);
   });
 
   it("caps HTG priority tasks while still surfacing overflow work lower down", () => {
@@ -245,7 +246,109 @@ describe("today planner", () => {
 
     expect(plan.priorityTasks.filter((task) => task.area === "HTG")).toHaveLength(3);
     expect(plan.otherTasks.some((task) => task.area === "HTG")).toBe(true);
-    expect(plan.priorityTasks.some((task) => task.area === "TLW")).toBe(true);
+    expect(plan.otherTasks.some((task) => task.area === "TLW")).toBe(true);
+  });
+
+  it("keeps all due and overdue tasks in the surfaced day plan", () => {
+    const tasks: NormalizedTask[] = Array.from({ length: 6 }, (_, index) => ({
+      id: `todoist-${index + 1}`,
+      source: "todoist",
+      sourceId: String(index + 1),
+      area: "ADMIN",
+      title: `Todoist item ${index + 1}`,
+      status: "open",
+      isOverdue: index < 2,
+      isBlocked: false,
+      dueDate: "2026-03-06",
+    }));
+
+    const plan = buildTodayPlan(
+      {
+        tasks,
+        calendarEvents: [],
+        articleEntries: [],
+        warnings: [],
+        debugRecord: {
+          date: "2026-03-06",
+          generatedAt: "2026-03-06T12:00:00.000Z",
+          providerSummaries: {},
+          normalizedInputPreview: {
+            tasks: [],
+            calendarEvents: [],
+            articleEntries: [],
+          },
+        },
+      },
+      settings,
+      new Date("2026-03-06T12:00:00.000Z"),
+    );
+
+    expect(plan.priorityTasks).toHaveLength(3);
+    expect(plan.otherTasks).toHaveLength(3);
+    expect(plan.tomorrowTasks).toHaveLength(0);
+    expect([...plan.priorityTasks, ...plan.otherTasks]).toHaveLength(6);
+  });
+
+  it("puts tomorrow-due work into a separate tomorrow section", () => {
+    const plan = buildTodayPlan(
+      {
+        tasks: [
+          {
+            id: "today-1",
+            source: "todoist",
+            sourceId: "1",
+            area: "ADMIN",
+            title: "Pay electric bill",
+            status: "open",
+            isOverdue: false,
+            isBlocked: false,
+            dueDate: "2026-03-06",
+          },
+          {
+            id: "tomorrow-1",
+            source: "todoist",
+            sourceId: "2",
+            area: "TLW",
+            title: "Prep tomorrow TLW update",
+            status: "open",
+            isOverdue: false,
+            isBlocked: false,
+            dueDate: "2026-03-07",
+          },
+          {
+            id: "tomorrow-2",
+            source: "asana",
+            sourceId: "3",
+            area: "HTG",
+            title: "Draft tomorrow HTG piece",
+            status: "open",
+            isOverdue: false,
+            isBlocked: false,
+            dueDate: "2026-03-07",
+          },
+        ],
+        calendarEvents: [],
+        articleEntries: [],
+        warnings: [],
+        debugRecord: {
+          date: "2026-03-06",
+          generatedAt: "2026-03-06T12:00:00.000Z",
+          providerSummaries: {},
+          normalizedInputPreview: {
+            tasks: [],
+            calendarEvents: [],
+            articleEntries: [],
+          },
+        },
+      },
+      settings,
+      new Date("2026-03-06T12:00:00.000Z"),
+    );
+
+    expect(plan.priorityTasks).toHaveLength(1);
+    expect(plan.otherTasks).toHaveLength(0);
+    expect(plan.tomorrowTasks).toHaveLength(2);
+    expect(plan.tomorrowTasks.every((task) => task.dueDate?.startsWith("2026-03-07"))).toBe(true);
   });
 
   it("filters undated backlog out of the daily plan", () => {

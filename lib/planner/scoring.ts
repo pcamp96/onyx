@@ -11,6 +11,7 @@ interface ScoreInput {
   settings: PlannerSettings;
   weeklyPaceGap: number;
   calendarConstraints: NormalizedCalendarEvent[];
+  now: Date;
 }
 
 function calendarCapacityAdjustment(events: NormalizedCalendarEvent[]) {
@@ -21,8 +22,8 @@ function calendarCapacityAdjustment(events: NormalizedCalendarEvent[]) {
   return Math.min(18, Math.round(minutes / 90));
 }
 
-export function scoreTask({ task, settings, weeklyPaceGap, calendarConstraints }: ScoreInput): RankedTask {
-  const daysToDeadline = daysUntil(task.dueDate);
+export function scoreTask({ task, settings, weeklyPaceGap, calendarConstraints, now }: ScoreInput): RankedTask {
+  const daysToDeadline = daysUntil(task.dueDate, now);
   const deadlineScore =
     daysToDeadline === null ? 0 : daysToDeadline <= 0 ? 24 : Math.max(0, 18 - daysToDeadline * 2);
   const paceScore = task.area === "HTG" ? weeklyPaceGap * 4 : weeklyPaceGap > 0 ? 2 : 0;

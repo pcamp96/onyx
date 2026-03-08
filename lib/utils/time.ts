@@ -31,18 +31,53 @@ export function isSameWeek(dateValue: string, reference: Date) {
   return date >= startOfWeek(reference) && date <= endOfWeek(reference);
 }
 
+const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+const DAY_IN_MS = 1000 * 60 * 60 * 24;
+
+function isDateOnlyValue(dateValue: string) {
+  return DATE_ONLY_PATTERN.test(dateValue);
+}
+
+function parseDateOnlyValue(dateValue: string) {
+  const [year, month, day] = dateValue.split("-").map(Number);
+  return new Date(year, month - 1, day);
+}
+
+function startOfDay(value: Date) {
+  const date = new Date(value);
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
+function endOfDay(value: Date) {
+  const date = startOfDay(value);
+  date.setDate(date.getDate() + 1);
+  date.setMilliseconds(-1);
+  return date;
+}
+
 export function daysUntil(dateValue?: string, reference = new Date()) {
   if (!dateValue) {
     return null;
   }
 
+  if (isDateOnlyValue(dateValue)) {
+    const targetDay = startOfDay(parseDateOnlyValue(dateValue));
+    const referenceDay = startOfDay(reference);
+    return Math.round((targetDay.getTime() - referenceDay.getTime()) / DAY_IN_MS);
+  }
+
   const target = new Date(dateValue);
-  return Math.ceil((target.getTime() - reference.getTime()) / (1000 * 60 * 60 * 24));
+  return Math.ceil((target.getTime() - reference.getTime()) / DAY_IN_MS);
 }
 
 export function isOverdue(dateValue?: string, reference = new Date()) {
   if (!dateValue) {
     return false;
+  }
+
+  if (isDateOnlyValue(dateValue)) {
+    return endOfDay(parseDateOnlyValue(dateValue)).getTime() < reference.getTime();
   }
 
   return new Date(dateValue).getTime() < reference.getTime();

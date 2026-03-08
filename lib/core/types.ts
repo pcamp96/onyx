@@ -347,6 +347,7 @@ export interface PlannerTodayResult {
   primaryFocus: string;
   priorityTasks: RankedTask[];
   otherTasks: RankedTask[];
+  tomorrowTasks: RankedTask[];
   rankedTasks: RankedTask[];
   warnings: string[];
   contentPrompts: ContentPrompt[];
@@ -366,6 +367,7 @@ export interface PlannerTodayApiResult {
   primaryFocus: string;
   priorityTasks: RankedTaskPreview[];
   otherTasks: RankedTaskPreview[];
+  tomorrowTasks: RankedTaskPreview[];
   otherTasksRemainingCount: number;
   otherTasksRemainingByArea: Partial<Record<WorkArea, number>>;
   warnings: string[];
