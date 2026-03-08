@@ -3,7 +3,7 @@ import { getServerEnv } from "@/lib/config/env";
 import { buildCanonicalOpenApiSpec, buildCanonicalOpenApiYaml, getSampleTodayResponse } from "@/lib/gpt/openapi";
 import type { GptApiCredentialRecord, GptInstructionTemplateInput, GptSetupData, GptSetupPreferences } from "@/lib/gpt/types";
 
-const AUTH_HEADER_NAME = "X-Onyx-API-Key";
+const AUTH_HEADER_NAME = "Authorization";
 
 export function buildGptInstructions(input: GptInstructionTemplateInput) {
   const { preferences } = input;
@@ -46,7 +46,7 @@ export function buildGptInstructions(input: GptInstructionTemplateInput) {
 }
 
 function buildAuthNotes() {
-  return `Choose API Key auth in Custom GPT setup and send the generated token in the ${AUTH_HEADER_NAME} header.`;
+  return `Choose API Key auth in Custom GPT setup and send the generated token in the ${AUTH_HEADER_NAME} header. Use Bearer <token> unless the action importer asks for only the raw secret.`;
 }
 
 function buildActionInstructions(params: {
@@ -61,8 +61,9 @@ function buildActionInstructions(params: {
     `2. If URL import is unavailable or you want to inspect it first, use the YAML version from ${params.schemaYamlUrl}.`,
     "3. Choose API Key authentication for the action.",
     `4. Set the auth header name exactly to ${params.authHeaderName}.`,
-    `5. Paste the generated Onyx API token as the action secret. ${params.authNotes}`,
-    "6. Save the action and test getFounderDailyPriorities before relying on the GPT.",
+    "5. Use the generated Onyx API token as the action secret.",
+    `6. ${params.authNotes}`,
+    "7. Save the action and test getFounderDailyPriorities before relying on the GPT.",
   ].join("\n");
 }
 
@@ -116,8 +117,8 @@ export function buildGptSetupData(params: {
     checklist: [
       "Create a new Custom GPT in ChatGPT.",
       "Add a custom action and import the schema from the schema URL.",
-      "Choose API Key auth and set the header name exactly to X-Onyx-API-Key.",
-      "Generate or rotate an Onyx GPT API key and paste it into the action auth field.",
+      "Choose API Key auth and set the header name exactly to Authorization.",
+      "Generate or rotate an Onyx GPT API key and paste it into the action auth field. Use Bearer <token> if ChatGPT expects a full Authorization header value.",
       "Paste the generated Onyx instructions into the GPT instructions field.",
       "Run /today and confirm the ranked task list and warnings appear correctly.",
     ],

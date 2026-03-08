@@ -26,7 +26,7 @@ describe("canonical openapi schema", () => {
     expect(schema.components.securitySchemes.OnyxApiKey).toMatchObject({
       type: "apiKey",
       in: "header",
-      name: "X-Onyx-API-Key",
+      name: "Authorization",
     });
     expect(schema.paths["/api/founder/today"].get.operationId).toBe("getFounderDailyPriorities");
     expect(schema.paths["/api/founder/week"].get.operationId).toBe("getFounderWeeklyOverview");
@@ -40,6 +40,6 @@ describe("canonical openapi schema", () => {
 
     expect(yaml).toContain("openapi: 3.1.0");
     expect(yaml).toContain("/api/founder/today:");
-    expect(yaml).toContain("name: X-Onyx-API-Key");
+    expect(yaml).toContain("name: Authorization");
   });
 });

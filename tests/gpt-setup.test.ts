@@ -48,7 +48,7 @@ describe("gpt setup generator", () => {
     expect(setup.baseUrl).toBe("https://onyx.example.com");
     expect(setup.schemaUrl).toBe("https://onyx.example.com/api/openapi.json");
     expect(setup.schemaYamlUrl).toBe("https://onyx.example.com/api/openapi.yaml");
-    expect(setup.authHeaderName).toBe("X-Onyx-API-Key");
+    expect(setup.authHeaderName).toBe("Authorization");
     expect(setup.instructions).toContain("priority engine");
     expect(setup.instructions).toContain("not a scheduler");
     expect(setup.instructions).toContain("HTG usually comes first.");
@@ -57,7 +57,8 @@ describe("gpt setup generator", () => {
     expect(setup.actionInstructions).toContain("add a new custom action");
     expect(setup.actionInstructions).toContain("getFounderDailyPriorities");
     expect(setup.actionSchemaYaml).toContain("openapi: 3.1.0");
-    expect(setup.checklist[2]).toContain("X-Onyx-API-Key");
+    expect(setup.authNotes).toContain("Bearer <token>");
+    expect(setup.checklist[2]).toContain("Authorization");
     expect(setup.preferences.assistantName).toBe("Onyx");
   });
 

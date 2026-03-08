@@ -218,8 +218,9 @@ function buildSchemaComponents() {
       OnyxApiKey: {
         type: "apiKey",
         in: "header",
-        name: "X-Onyx-API-Key",
-        description: "Per-user Onyx GPT API key generated from the GPT Setup page.",
+        name: "Authorization",
+        description:
+          "Per-user Onyx GPT API key generated from the GPT Setup page. Send the token in the Authorization header. Bearer <token> is supported.",
       },
     },
     schemas: {
