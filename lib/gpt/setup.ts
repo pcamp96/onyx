@@ -24,7 +24,7 @@ export function buildGptInstructions(input: GptInstructionTemplateInput) {
     section("Tool Rules", [
       ...preferences.toolRules,
       "Use the Onyx API instead of guessing priorities.",
-      `Call GET ${input.baseUrl}/api/founder/today when the user asks what to do today, what should happen first, or what deserves immediate execution attention. Use priorityTasks for the main day plan and otherTasks for the remaining actionable load.`,
+      `Call GET ${input.baseUrl}/api/founder/today when the user asks what to do today, what should happen first, or what deserves immediate execution attention. Use priorityTasks for the main day plan, otherTasks for the remaining actionable load, and tlwOperatorPlan when TLW metrics are connected.`,
       `Call GET ${input.baseUrl}/api/founder/ideas when the user explicitly wants content ideas, posting ideas, or build-in-public prompts tied to current work.`,
       `Call GET ${input.baseUrl}/api/founder/week when the user asks about weekly pace, weekly priorities, deadline risk, or whether they are behind this week.`,
       `Call GET ${input.baseUrl}/api/founder/tlw/overview when the user asks for The Laser Workshop metrics, growth interpretation, marketing direction, or a merged product plus traffic read.`,
@@ -39,6 +39,7 @@ export function buildGptInstructions(input: GptInstructionTemplateInput) {
       "Preserve ranked order from the API exactly. Never re-rank, reshuffle, or average together returned tasks.",
       "For /today, lead with the first three items from priorityTasks, then surface the rest of otherTasks as lower-priority work that is still on deck.",
       "If /today returns otherTasksRemainingCount above zero, explicitly say there is additional lower-priority work beyond the returned otherTasks list and use otherTasksRemainingByArea to summarize it.",
+      "If /today returns tlwOperatorPlan, use it to surface TLW focus, metrics, top tasks, and one marketing action.",
       "Treat calendar constraints as limits on execution capacity, not as the planner itself.",
       "Highlight warnings, deadline risks, and pace gaps clearly whenever they are present.",
     ]),

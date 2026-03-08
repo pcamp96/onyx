@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { NormalizedTask, PlannerSettings } from "@/lib/core/types";
 import { getBlockingCalendarEvents } from "@/lib/planner/calendar";
 import { buildTodayPlan } from "@/lib/planner/today";
+import { buildTlwOperatorPlan } from "@/lib/planner/tlw-operator";
 
 const settings: PlannerSettings = {
   userId: "founder",
@@ -383,5 +384,34 @@ describe("today planner", () => {
 
     expect(blockingEvents).toHaveLength(1);
     expect(blockingEvents[0]?.id).toBe("event-2");
+  });
+
+  it("builds a TLW operator plan from TLW metrics", () => {
+    const plan = buildTlwOperatorPlan({
+      snapshot: {
+        users_total: 364,
+        new_users_7d: 7,
+        paid_users: 14,
+        trial_users: 19,
+        settings_total: 26,
+        new_settings_7d: 0,
+        settings_velocity_7d: 0,
+        settings_per_paid_user: 1.86,
+        growth_stage: "seed",
+        generated_at: "2026-03-08T01:44:53.033Z",
+      },
+      analytics: {
+        activation_rate: 0.27,
+        activation_estimate: 0.23,
+        top_channel: "threads.net",
+        generated_at: "2026-03-08T01:44:53.068Z",
+      },
+      generated_at: "2026-03-08T01:44:53.068Z",
+    });
+
+    expect(plan.focus).toBe("Seed");
+    expect(plan.topTasks).toHaveLength(3);
+    expect(plan.marketingAction.title).toContain("Threads");
+    expect(plan.quickRead[0]).toContain("7 new users");
   });
 });

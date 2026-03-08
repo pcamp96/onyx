@@ -21,6 +21,7 @@ import { summarizeArticles } from "@/lib/planner/normalizers";
 import { derivePrimaryFocus, deriveWarnings } from "@/lib/planner/rules";
 import { scoreTask } from "@/lib/planner/scoring";
 import { buildTodayPlan } from "@/lib/planner/today";
+import { buildTlwOperatorPlan } from "@/lib/planner/tlw-operator";
 import { buildWeekPlan } from "@/lib/planner/week";
 import type { PlannerAggregateInput } from "@/lib/planner/types";
 import { decryptIntegrationSecret } from "@/lib/security/secrets";
@@ -105,11 +106,20 @@ export async function syncEnabledIntegrations(now = new Date(), userId = FOUNDER
   }));
   const calendarEvents = results.flatMap((result) => result.calendarEvents);
   const articleEntries = results.flatMap((result) => result.articleEntries);
+  const tlwOverviewResult = results.find((result) => result.provider === "tlw-onyx");
+  const tlwOverview =
+    tlwOverviewResult &&
+    tlwOverviewResult.rawPreview &&
+    typeof tlwOverviewResult.rawPreview === "object" &&
+    "overview" in tlwOverviewResult.rawPreview
+      ? (tlwOverviewResult.rawPreview.overview as PlannerAggregateInput["tlwOverview"])
+      : undefined;
 
   return {
     tasks,
     calendarEvents,
     articleEntries,
+    tlwOverview,
     warnings: results.flatMap((result) => result.warnings),
     debugRecord: {
       date: now.toISOString().slice(0, 10),
@@ -168,23 +178,30 @@ export async function getTodayPlan(now = new Date(), userId = FOUNDER_USER_ID): 
   ]);
   const calendarEvents = getBlockingCalendarEvents(aggregate.calendarEvents, settings);
   const result = buildTodayPlan({ ...aggregate, calendarEvents }, settings, now);
+  const tlwOperatorPlan = aggregate.tlwOverview ? buildTlwOperatorPlan(aggregate.tlwOverview) : undefined;
+  const enrichedResult = tlwOperatorPlan
+    ? {
+        ...result,
+        tlwOperatorPlan,
+      }
+    : result;
 
   await Promise.all([
     planningSnapshotsRepository.save(userId, {
       type: "today",
-      date: result.date,
-      summary: result.summary,
-      primaryFocus: result.primaryFocus,
-      calendarConstraints: compactCalendarConstraints(result.calendarConstraints),
-      rankedTasks: compactRankedTasks(result.rankedTasks),
-      warnings: result.warnings,
-      contentPrompts: result.contentPrompts,
-      generatedAt: result.generatedAt,
+      date: enrichedResult.date,
+      summary: enrichedResult.summary,
+      primaryFocus: enrichedResult.primaryFocus,
+      calendarConstraints: compactCalendarConstraints(enrichedResult.calendarConstraints),
+      rankedTasks: compactRankedTasks(enrichedResult.rankedTasks),
+      warnings: enrichedResult.warnings,
+      contentPrompts: enrichedResult.contentPrompts,
+      generatedAt: enrichedResult.generatedAt,
     }),
     planningDebugRepository.save(userId, "today", aggregate.debugRecord),
   ]);
 
-  return result;
+  return enrichedResult;
 }
 
 export async function getWeekPlan(now = new Date(), userId = FOUNDER_USER_ID): Promise<PlannerWeekResult> {

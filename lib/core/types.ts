@@ -304,6 +304,42 @@ export interface TlwOverviewResponse {
   generated_at: string;
 }
 
+export type TlwOperatorFocus = "Seed" | "Push" | "Double Down" | "Fix";
+
+export interface TlwOperatorTask {
+  title: string;
+  reason: string;
+}
+
+export interface TlwOperatorMarketingAction {
+  title: string;
+  draft?: string;
+  reason: string;
+}
+
+export interface TlwOperatorPlan {
+  focus: TlwOperatorFocus;
+  reason: string;
+  metrics: {
+    usersTotal: number;
+    newUsers7d?: number;
+    paidUsers?: number;
+    trialUsers?: number;
+    settingsTotal: number;
+    newSettings7d?: number;
+    settingsVelocity7d?: number;
+    settingsPerPaidUser?: number;
+    activationRate?: number | null;
+    activationEstimate?: number | null;
+    topChannel?: string | null;
+    growthStage?: TlwSnapshotResponse["growth_stage"];
+    generatedAt: string;
+  };
+  topTasks: TlwOperatorTask[];
+  marketingAction: TlwOperatorMarketingAction;
+  quickRead: string[];
+}
+
 export interface PlannerTodayResult {
   date: string;
   summary: PlannerSummary;
@@ -314,6 +350,7 @@ export interface PlannerTodayResult {
   rankedTasks: RankedTask[];
   warnings: string[];
   contentPrompts: ContentPrompt[];
+  tlwOperatorPlan?: TlwOperatorPlan;
   generatedAt?: string;
 }
 
@@ -333,6 +370,7 @@ export interface PlannerTodayApiResult {
   otherTasksRemainingByArea: Partial<Record<WorkArea, number>>;
   warnings: string[];
   contentPrompts: ContentPrompt[];
+  tlwOperatorPlan?: TlwOperatorPlan;
   generatedAt?: string;
 }
 

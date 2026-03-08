@@ -100,6 +100,49 @@ const sampleTodayResponse: PlannerTodayApiResult = {
       hook: "Most of the useful lessons in The Laser Workshop came from friction, not momentum.",
     },
   ],
+  tlwOperatorPlan: {
+    focus: "Seed",
+    reason: "settings_velocity_7d = 0 -> platform content stalled.",
+    metrics: {
+      usersTotal: 364,
+      newUsers7d: 7,
+      paidUsers: 14,
+      trialUsers: 19,
+      settingsTotal: 26,
+      newSettings7d: 0,
+      settingsVelocity7d: 0,
+      settingsPerPaidUser: 1.86,
+      activationRate: 0.27,
+      activationEstimate: 0.23,
+      topChannel: "threads.net",
+      growthStage: "seed",
+      generatedAt: "2026-03-08T01:44:53.068Z",
+    },
+    topTasks: [
+      {
+        title: "Add 10-15 material settings today",
+        reason: "Settings total is 26 and new settings in the last 7 days is 0. Supply is the main bottleneck.",
+      },
+      {
+        title: "Upload 3-5 simple projects or quick wins",
+        reason: "You have 364 users but only 26 settings. The product needs visible proof of life when new users land.",
+      },
+      {
+        title: "Capture content while testing settings",
+        reason: "One shop session can produce short clips, comparisons, failed attempts, and build-in-public updates without extra planning overhead.",
+      },
+    ],
+    marketingAction: {
+      title: "Post a Threads build-in-public update",
+      draft: "Spent today dialing in new laser material settings for The Laser Workshop.\n\nEvery test gets uploaded to the database so new laser owners do not have to waste material figuring it out.\n\n26 settings live so far.\nGoal: 100+.\n\nSlowly turning this into the place you check before you hit Start.",
+      reason: "threads.net is the current top channel, so use today's work to create one concrete post instead of a vague marketing task.",
+    },
+    quickRead: [
+      "User growth exists (7 new users this week), but the supply side needs more depth.",
+      "Settings velocity is effectively zero, which makes supply the biggest current bottleneck.",
+      "Top channel: threads.net. Activation rate: 27%.",
+    ],
+  },
   generatedAt: "2026-03-07T14:05:00.000Z",
 };
 
@@ -517,6 +560,7 @@ function buildSchemaComponents() {
             type: "array",
             items: { $ref: "#/components/schemas/ContentPrompt" },
           },
+          tlwOperatorPlan: { $ref: "#/components/schemas/TlwOperatorPlan" },
           generatedAt: { type: "string", format: "date-time" },
         },
       },
@@ -693,6 +737,81 @@ function buildSchemaComponents() {
           snapshot: { $ref: "#/components/schemas/TlwSnapshotResponse" },
           analytics: { $ref: "#/components/schemas/TlwAnalyticsResponse" },
           generated_at: { type: "string", format: "date-time" },
+        },
+      },
+      TlwOperatorTask: {
+        type: "object",
+        additionalProperties: false,
+        required: ["title", "reason"],
+        properties: {
+          title: { type: "string", minLength: 1 },
+          reason: { type: "string", minLength: 1 },
+        },
+      },
+      TlwOperatorMarketingAction: {
+        type: "object",
+        additionalProperties: false,
+        required: ["title", "reason"],
+        properties: {
+          title: { type: "string", minLength: 1 },
+          draft: { type: "string", minLength: 1 },
+          reason: { type: "string", minLength: 1 },
+        },
+      },
+      TlwOperatorMetrics: {
+        type: "object",
+        additionalProperties: false,
+        required: ["usersTotal", "settingsTotal", "generatedAt"],
+        properties: {
+          usersTotal: { type: "integer", minimum: 0 },
+          newUsers7d: { type: "integer" },
+          paidUsers: { type: "integer" },
+          trialUsers: { type: "integer" },
+          settingsTotal: { type: "integer", minimum: 0 },
+          newSettings7d: { type: "integer" },
+          settingsVelocity7d: { type: "number" },
+          settingsPerPaidUser: { type: "number" },
+          activationRate: {
+            nullable: true,
+            oneOf: [{ type: "number" }, { type: "null" }],
+          },
+          activationEstimate: {
+            nullable: true,
+            oneOf: [{ type: "number" }, { type: "null" }],
+          },
+          topChannel: {
+            nullable: true,
+            oneOf: [{ type: "string" }, { type: "null" }],
+          },
+          growthStage: {
+            type: "string",
+            enum: ["seed", "early-growth", "growth", "scale"],
+          },
+          generatedAt: { type: "string", format: "date-time" },
+        },
+      },
+      TlwOperatorPlan: {
+        type: "object",
+        additionalProperties: false,
+        required: ["focus", "reason", "metrics", "topTasks", "marketingAction", "quickRead"],
+        properties: {
+          focus: {
+            type: "string",
+            enum: ["Seed", "Push", "Double Down", "Fix"],
+          },
+          reason: { type: "string", minLength: 1 },
+          metrics: { $ref: "#/components/schemas/TlwOperatorMetrics" },
+          topTasks: {
+            type: "array",
+            minItems: 1,
+            items: { $ref: "#/components/schemas/TlwOperatorTask" },
+          },
+          marketingAction: { $ref: "#/components/schemas/TlwOperatorMarketingAction" },
+          quickRead: {
+            type: "array",
+            minItems: 1,
+            items: { type: "string", minLength: 1 },
+          },
         },
       },
       CaptureItemRequest: {
