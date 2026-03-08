@@ -1,4 +1,11 @@
-import type { PlannerIdeasApiResult, PlannerTodayApiResult, PlannerWeekApiResult } from "@/lib/core/types";
+import type {
+  PlannerIdeasApiResult,
+  PlannerTodayApiResult,
+  PlannerWeekApiResult,
+  TlwAnalyticsResponse,
+  TlwOverviewResponse,
+  TlwSnapshotResponse,
+} from "@/lib/core/types";
 import { getServerEnv } from "@/lib/config/env";
 
 const sampleTodayResponse: PlannerTodayApiResult = {
@@ -72,6 +79,12 @@ const sampleTodayResponse: PlannerTodayApiResult = {
       reason: "This has the strongest execution value right now.",
     },
   ],
+  otherTasksRemainingCount: 4,
+  otherTasksRemainingByArea: {
+    HTG: 2,
+    TLW: 1,
+    ADMIN: 1,
+  },
   warnings: ["One article remains to hit the weekly minimum."],
   contentPrompts: [
     {
@@ -194,6 +207,62 @@ const sampleIdeasResponse: PlannerIdeasApiResult = {
   warnings: ["One article remains to hit the weekly minimum."],
   rankedContext: sampleWeekResponse.rankedPriorities,
   generatedAt: "2026-03-07T14:05:00.000Z",
+};
+
+const sampleTlwSnapshotResponse: TlwSnapshotResponse = {
+  users_total: 364,
+  new_users_24h: 2,
+  new_users_7d: 11,
+  paid_users: 14,
+  trial_users: 19,
+  settings_total: 26,
+  new_settings_7d: 5,
+  users_delta_7d: 11,
+  settings_delta_7d: 5,
+  paid_users_delta_7d: 2,
+  settings_velocity_7d: 0.71,
+  settings_per_paid_user: 1.86,
+  user_growth_rate_7d: 3.1,
+  settings_growth_rate_7d: 5.4,
+  growth_stage: "seed",
+  user_tiers: {
+    free: 331,
+    maker: 18,
+    merchant: 10,
+    manufacturer: 5,
+  },
+  settings_breakdown: {
+    community_settings: 18,
+    supplier_settings: 8,
+  },
+  traffic_sources: {
+    referrers: [
+      { name: "threads.net", visits: 41, share: 0.34 },
+      { name: "google", visits: 38, share: 0.31 },
+    ],
+  },
+  activation_rate: 0.27,
+  generated_at: "2026-03-08T01:44:53.033Z",
+};
+
+const sampleTlwAnalyticsResponse: TlwAnalyticsResponse = {
+  traffic_sources: {
+    referrers: [
+      { name: "threads.net", visits: 41, share: 0.34 },
+      { name: "google", visits: 38, share: 0.31 },
+    ],
+  },
+  activation_rate: 0.27,
+  activation_estimate: 0.23,
+  top_channel: "threads.net",
+  window_days: 7,
+  generated_at: "2026-03-08T01:44:53.068Z",
+};
+
+const sampleTlwOverviewResponse: TlwOverviewResponse = {
+  snapshot: sampleTlwSnapshotResponse,
+  analytics: sampleTlwAnalyticsResponse,
+  generated_at: "2026-03-08T01:44:53.068Z",
 };
 
 function buildServerDescription(appUrl: string) {
@@ -426,6 +495,20 @@ function buildSchemaComponents() {
             type: "array",
             items: { $ref: "#/components/schemas/RankedTaskPreview" },
           },
+          otherTasksRemainingCount: {
+            type: "integer",
+            minimum: 0,
+          },
+          otherTasksRemainingByArea: {
+            type: "object",
+            additionalProperties: false,
+            properties: {
+              HTG: { type: "integer", minimum: 0 },
+              TLW: { type: "integer", minimum: 0 },
+              CREATED_WORKSHOP: { type: "integer", minimum: 0 },
+              ADMIN: { type: "integer", minimum: 0 },
+            },
+          },
           warnings: {
             type: "array",
             items: { type: "string", minLength: 1 },
@@ -494,6 +577,122 @@ function buildSchemaComponents() {
             items: { $ref: "#/components/schemas/RankedTaskPreview" },
           },
           generatedAt: { type: "string", format: "date-time" },
+        },
+      },
+      TlwReferrer: {
+        type: "object",
+        additionalProperties: false,
+        required: ["name", "visits"],
+        properties: {
+          name: { type: "string", minLength: 1 },
+          visits: { type: "integer", minimum: 0 },
+          share: { type: "number" },
+        },
+      },
+      TlwTrafficSources: {
+        type: "object",
+        additionalProperties: false,
+        required: ["referrers"],
+        properties: {
+          referrers: {
+            type: "array",
+            items: { $ref: "#/components/schemas/TlwReferrer" },
+          },
+        },
+      },
+      TlwUserTiers: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          free: { type: "integer", minimum: 0 },
+          maker: { type: "integer", minimum: 0 },
+          merchant: { type: "integer", minimum: 0 },
+          manufacturer: { type: "integer", minimum: 0 },
+        },
+      },
+      TlwSettingsBreakdown: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          community_settings: { type: "integer", minimum: 0 },
+          supplier_settings: { type: "integer", minimum: 0 },
+        },
+      },
+      TlwSnapshotResponse: {
+        type: "object",
+        additionalProperties: false,
+        required: ["users_total", "settings_total", "generated_at"],
+        properties: {
+          users_total: { type: "integer", minimum: 0 },
+          new_users_24h: { type: "integer" },
+          new_users_7d: { type: "integer" },
+          paid_users: { type: "integer" },
+          trial_users: { type: "integer" },
+          settings_total: { type: "integer", minimum: 0 },
+          new_settings_7d: { type: "integer" },
+          users_delta_7d: { type: "integer" },
+          settings_delta_7d: { type: "integer" },
+          paid_users_delta_7d: { type: "integer" },
+          settings_velocity_7d: { type: "number" },
+          settings_per_paid_user: { type: "number" },
+          user_growth_rate_7d: { type: "number" },
+          settings_growth_rate_7d: { type: "number" },
+          growth_stage: {
+            type: "string",
+            enum: ["seed", "early-growth", "growth", "scale"],
+          },
+          user_tiers: { $ref: "#/components/schemas/TlwUserTiers" },
+          settings_breakdown: { $ref: "#/components/schemas/TlwSettingsBreakdown" },
+          traffic_sources: {
+            nullable: true,
+            oneOf: [
+              { $ref: "#/components/schemas/TlwTrafficSources" },
+              { type: "null" },
+            ],
+          },
+          activation_rate: {
+            nullable: true,
+            oneOf: [{ type: "number" }, { type: "null" }],
+          },
+          generated_at: { type: "string", format: "date-time" },
+        },
+      },
+      TlwAnalyticsResponse: {
+        type: "object",
+        additionalProperties: false,
+        required: ["generated_at"],
+        properties: {
+          traffic_sources: {
+            nullable: true,
+            oneOf: [
+              { $ref: "#/components/schemas/TlwTrafficSources" },
+              { type: "null" },
+            ],
+          },
+          activation_rate: {
+            nullable: true,
+            oneOf: [{ type: "number" }, { type: "null" }],
+          },
+          activation_estimate: {
+            nullable: true,
+            oneOf: [{ type: "number" }, { type: "null" }],
+          },
+          top_channel: {
+            nullable: true,
+            oneOf: [{ type: "string" }, { type: "null" }],
+          },
+          window_days: { type: "integer", minimum: 1, maximum: 90 },
+          generated_at: { type: "string", format: "date-time" },
+        },
+      },
+      TlwOverviewResponse: {
+        type: "object",
+        additionalProperties: false,
+        required: ["snapshot", "analytics", "generated_at"],
+        properties: {
+          snapshot: { $ref: "#/components/schemas/TlwSnapshotResponse" },
+          analytics: { $ref: "#/components/schemas/TlwAnalyticsResponse" },
+          generated_at: { type: "string", format: "date-time" },
         },
       },
       CaptureItemRequest: {
@@ -639,6 +838,146 @@ export function buildCanonicalOpenApiSpec() {
                     weekPlan: {
                       summary: "Sample /week response",
                       value: sampleWeekResponse,
+                    },
+                  },
+                },
+              },
+            },
+            "401": {
+              description: "Missing or invalid API key.",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                  examples: {
+                    unauthorized: {
+                      value: { error: "Unauthorized" },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      "/api/founder/tlw/snapshot": {
+        get: {
+          operationId: "getFounderTlwSnapshot",
+          summary: "Get The Laser Workshop product metrics snapshot",
+          description:
+            "Call this when the user explicitly wants the raw TLW product snapshot without the analytics layer. Use it for direct counts, growth stage, user tiers, and settings breakdown.",
+          security: [{ OnyxApiKey: [] }],
+          responses: {
+            "200": {
+              description: "TLW product metrics snapshot.",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/TlwSnapshotResponse" },
+                  examples: {
+                    tlwSnapshot: {
+                      summary: "Sample TLW snapshot response",
+                      value: sampleTlwSnapshotResponse,
+                    },
+                  },
+                },
+              },
+            },
+            "401": {
+              description: "Missing or invalid API key.",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                  examples: {
+                    unauthorized: {
+                      value: { error: "Unauthorized" },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      "/api/founder/tlw/analytics": {
+        get: {
+          operationId: "getFounderTlwAnalytics",
+          summary: "Get The Laser Workshop traffic analytics",
+          description:
+            "Call this when the user asks specifically about TLW traffic sources, top channel, or activation metrics. Use window_days only when the user asks for a wider or narrower view.",
+          security: [{ OnyxApiKey: [] }],
+          parameters: [
+            {
+              name: "window_days",
+              in: "query",
+              required: false,
+              schema: {
+                type: "integer",
+                minimum: 1,
+                maximum: 90,
+                default: 7,
+              },
+            },
+          ],
+          responses: {
+            "200": {
+              description: "TLW traffic and activation analytics.",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/TlwAnalyticsResponse" },
+                  examples: {
+                    tlwAnalytics: {
+                      summary: "Sample TLW analytics response",
+                      value: sampleTlwAnalyticsResponse,
+                    },
+                  },
+                },
+              },
+            },
+            "401": {
+              description: "Missing or invalid API key.",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                  examples: {
+                    unauthorized: {
+                      value: { error: "Unauthorized" },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      "/api/founder/tlw/overview": {
+        get: {
+          operationId: "getFounderTlwOverview",
+          summary: "Get merged TLW snapshot and analytics",
+          description:
+            "Call this when the user asks how TLW is doing, what the biggest growth bottleneck is, or what marketing action to prioritize from real TLW metrics. Use it as the default TLW metrics call.",
+          security: [{ OnyxApiKey: [] }],
+          parameters: [
+            {
+              name: "window_days",
+              in: "query",
+              required: false,
+              schema: {
+                type: "integer",
+                minimum: 1,
+                maximum: 90,
+                default: 7,
+              },
+            },
+          ],
+          responses: {
+            "200": {
+              description: "Merged TLW product snapshot and analytics.",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/TlwOverviewResponse" },
+                  examples: {
+                    tlwOverview: {
+                      summary: "Sample TLW overview response",
+                      value: sampleTlwOverviewResponse,
                     },
                   },
                 },

@@ -22,6 +22,9 @@ describe("canonical openapi schema", () => {
       "/api/founder/today",
       "/api/founder/ideas",
       "/api/founder/week",
+      "/api/founder/tlw/snapshot",
+      "/api/founder/tlw/analytics",
+      "/api/founder/tlw/overview",
       "/api/founder/capture",
     ]);
     expect(schema.components.securitySchemes.OnyxApiKey).toMatchObject({
@@ -32,10 +35,14 @@ describe("canonical openapi schema", () => {
     expect(schema.paths["/api/founder/today"].get.operationId).toBe("getFounderDailyPriorities");
     expect(schema.paths["/api/founder/ideas"].get.operationId).toBe("getFounderContentIdeas");
     expect(schema.paths["/api/founder/week"].get.operationId).toBe("getFounderWeeklyOverview");
+    expect(schema.paths["/api/founder/tlw/snapshot"].get.operationId).toBe("getFounderTlwSnapshot");
+    expect(schema.paths["/api/founder/tlw/analytics"].get.operationId).toBe("getFounderTlwAnalytics");
+    expect(schema.paths["/api/founder/tlw/overview"].get.operationId).toBe("getFounderTlwOverview");
     expect(schema.paths["/api/founder/capture"].post["x-openai-isConsequential"]).toBe(true);
     expect(schema.components.schemas.TodayPlanResponse.additionalProperties).toBe(false);
     expect(schema.components.schemas.TodayPlanResponse.required).not.toContain("rankedTasks");
     expect(schema.components.schemas.TodayPlanResponse.properties.priorityTasks.items.$ref).toBe("#/components/schemas/RankedTaskPreview");
+    expect(schema.components.schemas.TodayPlanResponse.properties.otherTasksRemainingCount.type).toBe("integer");
     expect(schema.components.schemas.RankedTask.properties.sourceUrl.format).toBe("uri");
   });
 
@@ -44,6 +51,7 @@ describe("canonical openapi schema", () => {
 
     expect(yaml).toContain("openapi: 3.1.0");
     expect(yaml).toContain("/api/founder/today:");
+    expect(yaml).toContain("/api/founder/tlw/overview:");
     expect(yaml).toContain("name: Authorization");
   });
 });

@@ -41,6 +41,14 @@ export function buildDefaultGptSetupPreferences(userId: string, updatedBy: strin
       "Use contentPrompts when present.",
       "Keep content ideas secondary to execution priorities unless the user explicitly asks only for content ideas.",
     ],
+    externalApiRules: [
+      "Use the TLW metrics endpoints only when the user asks about The Laser Workshop, growth, marketing, or product traction.",
+      "Use /api/founder/tlw/overview as the default TLW metrics call.",
+      "Use /api/founder/tlw/analytics for traffic-source or activation questions.",
+      "Use /api/founder/tlw/snapshot for raw TLW counts and growth-stage questions.",
+      "Interpret TLW metrics using growth thinking: user growth indicates acquisition health, settings velocity indicates supply health, activation rate indicates onboarding health, and conversion indicates monetization health.",
+      "Never ask the user for the TLW token. TLW auth should be configured server-side through Integrations.",
+    ],
     constraints: [
       "Onyx is a priority engine, not a scheduler.",
       "Treat calendar as a constraint, not the planning engine.",

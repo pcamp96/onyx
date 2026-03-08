@@ -3,7 +3,8 @@ export type IntegrationProvider =
   | "asana"
   | "todoist"
   | "google-sheets"
-  | "calendar";
+  | "calendar"
+  | "tlw-onyx";
 
 export interface AuditFields {
   createdAt: string;
@@ -93,6 +94,10 @@ export interface GoogleSheetConfig {
   endRow?: number;
   weekStartDate?: string;
   columnMapping: GoogleSheetColumnMapping;
+}
+
+export interface TlwOnyxConfig {
+  baseUrl?: string;
 }
 
 export interface SponsorProject {
@@ -239,6 +244,66 @@ export interface ContentPrompt {
   hook: string;
 }
 
+export interface TlwReferrer {
+  name: string;
+  visits: number;
+  share?: number;
+}
+
+export interface TlwTrafficSources {
+  referrers: TlwReferrer[];
+}
+
+export interface TlwUserTiers {
+  free?: number;
+  maker?: number;
+  merchant?: number;
+  manufacturer?: number;
+}
+
+export interface TlwSettingsBreakdown {
+  community_settings?: number;
+  supplier_settings?: number;
+}
+
+export interface TlwSnapshotResponse {
+  users_total: number;
+  new_users_24h?: number;
+  new_users_7d?: number;
+  paid_users?: number;
+  trial_users?: number;
+  settings_total: number;
+  new_settings_7d?: number;
+  users_delta_7d?: number;
+  settings_delta_7d?: number;
+  paid_users_delta_7d?: number;
+  settings_velocity_7d?: number;
+  settings_per_paid_user?: number;
+  user_growth_rate_7d?: number;
+  settings_growth_rate_7d?: number;
+  growth_stage?: "seed" | "early-growth" | "growth" | "scale";
+  user_tiers?: TlwUserTiers;
+  settings_breakdown?: TlwSettingsBreakdown;
+  traffic_sources?: TlwTrafficSources | null;
+  activation_rate?: number | null;
+  generated_at: string;
+}
+
+export interface TlwAnalyticsResponse {
+  traffic_sources?: TlwTrafficSources | null;
+  activation_rate?: number | null;
+  activation_estimate?: number | null;
+  top_channel?: string | null;
+  window_days?: number;
+  generated_at: string;
+}
+
+export interface TlwOverviewResponse {
+  snapshot: TlwSnapshotResponse;
+  analytics: TlwAnalyticsResponse;
+  generated_at: string;
+}
+
 export interface PlannerTodayResult {
   date: string;
   summary: PlannerSummary;
@@ -264,6 +329,8 @@ export interface PlannerTodayApiResult {
   primaryFocus: string;
   priorityTasks: RankedTaskPreview[];
   otherTasks: RankedTaskPreview[];
+  otherTasksRemainingCount: number;
+  otherTasksRemainingByArea: Partial<Record<WorkArea, number>>;
   warnings: string[];
   contentPrompts: ContentPrompt[];
   generatedAt?: string;

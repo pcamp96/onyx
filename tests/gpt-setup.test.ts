@@ -54,12 +54,16 @@ describe("gpt setup generator", () => {
     expect(setup.instructions).toContain("HTG usually comes first.");
     expect(setup.instructions).toContain("America/Chicago");
     expect(setup.instructions).toContain("/api/founder/ideas");
+    expect(setup.instructions).toContain("/api/founder/tlw/overview");
+    expect(setup.instructions).toContain("External API Rules");
+    expect(setup.instructions).toContain("Never ask the user for the TLW token.");
     expect(setup.actionInstructions).toContain("add a new custom action");
     expect(setup.actionInstructions).toContain("getFounderDailyPriorities");
     expect(setup.actionSchemaYaml).toContain("openapi: 3.1.0");
     expect(setup.authNotes).toContain("Bearer <token>");
     expect(setup.checklist[2]).toContain("Authorization");
     expect(setup.conversationStarters).toContain("/ideas");
+    expect(setup.conversationStarters).toContain("/tlw-overview");
     expect(setup.preferences.assistantName).toBe("Onyx");
   });
 

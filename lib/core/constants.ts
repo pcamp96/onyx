@@ -8,6 +8,7 @@ export const PROVIDERS: IntegrationProvider[] = [
   "todoist",
   "google-sheets",
   "calendar",
+  "tlw-onyx",
 ];
 
 export const DEFAULT_AREA_WEIGHTS: Record<WorkArea, number> = {
@@ -40,4 +41,5 @@ export const PROVIDER_LABELS: Record<IntegrationProvider, string> = {
   todoist: "Todoist",
   "google-sheets": "Google Sheets",
   calendar: "Calendar",
+  "tlw-onyx": "TLW Onyx API",
 };

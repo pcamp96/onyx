@@ -47,6 +47,7 @@ type IntegrationLocalConfig = {
   icsUrls: string[];
   workspaceId: string;
   projectId: string;
+  baseUrl: string;
 };
 
 export function IntegrationsPanel({ integrations, googleSheetsConfig, configs }: Props) {
@@ -206,6 +207,7 @@ function IntegrationCard({
     icsUrls: toStringList(record.icsUrls, record.icsUrl),
     workspaceId: String(record.workspaceId ?? ""),
     projectId: String(record.projectId ?? ""),
+    baseUrl: String(record.baseUrl ?? "https://thelaserworkshop.com"),
   }));
 
   const providerLabel = PROVIDER_LABELS[integration.provider];
@@ -439,6 +441,13 @@ function IntegrationCard({
                       value={localConfig.projectId ?? ""}
                       onChange={(value) => setLocalConfig((current) => ({ ...current, projectId: value }))}
                     />
+                  ) : integration.provider === "tlw-onyx" ? (
+                    <Field
+                      label="TLW API base URL"
+                      hint="Defaults to https://thelaserworkshop.com. Override only if the TLW API moves."
+                      value={localConfig.baseUrl ?? ""}
+                      onChange={(value) => setLocalConfig((current) => ({ ...current, baseUrl: value }))}
+                    />
                   ) : (
                     <Field
                       label="Project or workspace hint"
@@ -493,7 +502,9 @@ function IntegrationCard({
                           : integration.provider === "asana"
                             ? { workspaceId: localConfig.workspaceId }
                             : integration.provider === "todoist"
-                                ? { projectId: localConfig.projectId }
+                              ? { projectId: localConfig.projectId }
+                              : integration.provider === "tlw-onyx"
+                                ? { baseUrl: localConfig.baseUrl }
                                 : localConfig,
                     })
                   }

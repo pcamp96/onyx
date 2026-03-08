@@ -42,6 +42,7 @@ export interface GptSetupPreferences {
   priorityRules: string[];
   toolRules: string[];
   contentRules: string[];
+  externalApiRules: string[];
   constraints: string[];
   projectLabels: GptProjectLabels;
   maxTasks: number;

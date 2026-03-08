@@ -19,6 +19,10 @@ export async function getIntegrationAdapter(provider: IntegrationProvider): Prom
       const imported = await import("@/lib/integrations/calendar/adapter");
       return new imported.CalendarAdapter();
     }
+    case "tlw-onyx": {
+      const imported = await import("@/lib/integrations/tlw-onyx/adapter");
+      return new imported.TlwOnyxAdapter();
+    }
     default:
       throw new Error(`Unknown integration provider: ${provider}`);
   }

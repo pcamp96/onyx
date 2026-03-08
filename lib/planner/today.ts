@@ -4,7 +4,7 @@ import { derivePrimaryFocus, deriveWarnings } from "@/lib/planner/rules";
 import { scoreTask } from "@/lib/planner/scoring";
 import { summarizeArticles } from "@/lib/planner/normalizers";
 import type { PlannerAggregateInput } from "@/lib/planner/types";
-import { toIsoDate } from "@/lib/utils/time";
+import { daysUntil, toIsoDate } from "@/lib/utils/time";
 
 const DAILY_PRIORITY_CAPS: Partial<Record<RankedTask["area"], number>> = {
   HTG: 3,
@@ -41,17 +41,37 @@ function splitTodayTasks(tasks: RankedTask[], weeklyPaceGap: number) {
   };
 }
 
+function shouldSurfaceTodayTask(task: RankedTask) {
+  if (task.isOverdue) {
+    return true;
+  }
+
+  if (task.sponsorRisk) {
+    return true;
+  }
+
+  const daysToDeadline = daysUntil(task.dueDate);
+  if (daysToDeadline !== null) {
+    return daysToDeadline <= 1;
+  }
+
+  return false;
+}
+
 export function buildTodayPlan(input: PlannerAggregateInput, settings: PlannerSettings, now: Date): PlannerTodayResult {
   const summary = summarizeArticles(input.articleEntries, settings, now);
   const weeklyPaceGap = summary.remainingToMinimum;
-  const rankedTasks = input.tasks
+  const scoredTasks = input.tasks
       .map((task) => scoreTask({
         task,
         settings,
         weeklyPaceGap,
         calendarConstraints: input.calendarEvents,
       }))
-      .sort((left, right) => right.score - left.score)
+      .sort((left, right) => right.score - left.score);
+  const actionableTasks = scoredTasks.filter(shouldSurfaceTodayTask);
+  const taskPool = actionableTasks.length ? actionableTasks : scoredTasks.slice(0, settings.maxTodayTasks * 2);
+  const rankedTasks = taskPool
       .map((task, index): RankedTask => ({
         ...task,
         rank: index + 1,

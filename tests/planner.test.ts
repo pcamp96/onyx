@@ -192,7 +192,7 @@ describe("today planner", () => {
     expect(plan.priorityTasks.some((task) => task.area === "CREATED_WORKSHOP")).toBe(true);
     expect(plan.priorityTasks[0]?.area).toBe("HTG");
     expect(plan.otherTasks.length).toBeGreaterThan(0);
-    expect(plan.rankedTasks.length).toBe(8);
+    expect(plan.rankedTasks.length).toBe(7);
   });
 
   it("caps HTG priority tasks while still surfacing overflow work lower down", () => {
@@ -245,6 +245,55 @@ describe("today planner", () => {
     expect(plan.priorityTasks.filter((task) => task.area === "HTG")).toHaveLength(3);
     expect(plan.otherTasks.some((task) => task.area === "HTG")).toBe(true);
     expect(plan.priorityTasks.some((task) => task.area === "TLW")).toBe(true);
+  });
+
+  it("filters undated backlog out of the daily plan", () => {
+    const plan = buildTodayPlan(
+      {
+        tasks: [
+          {
+            id: "admin-1",
+            source: "todoist",
+            sourceId: "1",
+            area: "ADMIN",
+            title: "Random someday backlog idea",
+            status: "open",
+            isOverdue: false,
+            isBlocked: false,
+          },
+          {
+            id: "tlw-1",
+            source: "todoist",
+            sourceId: "2",
+            area: "TLW",
+            title: "Follow up with hot lead",
+            status: "open",
+            isOverdue: false,
+            isBlocked: false,
+            dueDate: "2026-03-06",
+          },
+        ],
+        calendarEvents: [],
+        articleEntries: [],
+        warnings: [],
+        debugRecord: {
+          date: "2026-03-06",
+          generatedAt: "2026-03-06T12:00:00.000Z",
+          providerSummaries: {},
+          normalizedInputPreview: {
+            tasks: [],
+            calendarEvents: [],
+            articleEntries: [],
+          },
+        },
+      },
+      settings,
+      new Date("2026-03-06T12:00:00.000Z"),
+    );
+
+    expect(plan.priorityTasks.some((task) => task.title === "Random someday backlog idea")).toBe(false);
+    expect(plan.otherTasks.some((task) => task.title === "Random someday backlog idea")).toBe(false);
+    expect(plan.priorityTasks[0]?.title).toBe("Follow up with hot lead");
   });
 
   it("promotes created workshop when sponsor risk is present", () => {
