@@ -244,6 +244,8 @@ export interface PlannerTodayResult {
   summary: PlannerSummary;
   calendarConstraints: NormalizedCalendarEvent[];
   primaryFocus: string;
+  priorityTasks: RankedTask[];
+  otherTasks: RankedTask[];
   rankedTasks: RankedTask[];
   warnings: string[];
   contentPrompts: ContentPrompt[];

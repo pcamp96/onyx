@@ -24,7 +24,7 @@ export function buildGptInstructions(input: GptInstructionTemplateInput) {
     section("Tool Rules", [
       ...preferences.toolRules,
       "Use the Onyx API instead of guessing priorities.",
-      `Call GET ${input.baseUrl}/api/founder/today when the user asks what to do today, what should happen first, or what deserves immediate execution attention.`,
+      `Call GET ${input.baseUrl}/api/founder/today when the user asks what to do today, what should happen first, or what deserves immediate execution attention. Use priorityTasks for the main day plan and otherTasks for the remaining actionable load.`,
       `Call GET ${input.baseUrl}/api/founder/ideas when the user explicitly wants content ideas, posting ideas, or build-in-public prompts tied to current work.`,
       `Call GET ${input.baseUrl}/api/founder/week when the user asks about weekly pace, weekly priorities, deadline risk, or whether they are behind this week.`,
       `Call POST ${input.baseUrl}/api/founder/capture only when the user explicitly wants to save a task, reminder, or idea into Onyx.`,
@@ -33,6 +33,7 @@ export function buildGptInstructions(input: GptInstructionTemplateInput) {
     section("Constraints", [
       ...preferences.constraints,
       "Preserve ranked order from the API exactly. Never re-rank, reshuffle, or average together returned tasks.",
+      "For /today, lead with the first three items from priorityTasks, then surface the rest of priorityTasks and otherTasks as lower-priority work that is still on deck.",
       "Treat calendar constraints as limits on execution capacity, not as the planner itself.",
       "Highlight warnings, deadline risks, and pace gaps clearly whenever they are present.",
     ]),

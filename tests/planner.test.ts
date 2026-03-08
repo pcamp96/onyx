@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { PlannerSettings } from "@/lib/core/types";
+import type { NormalizedTask, PlannerSettings } from "@/lib/core/types";
 import { getBlockingCalendarEvents } from "@/lib/planner/calendar";
 import { buildTodayPlan } from "@/lib/planner/today";
 
@@ -72,10 +72,11 @@ describe("today planner", () => {
     );
 
     expect(plan.rankedTasks[0]?.area).toBe("HTG");
+    expect(plan.priorityTasks[0]?.area).toBe("HTG");
     expect(plan.primaryFocus).toBe("How-To Geek output");
   });
 
-  it("keeps cross-area visibility in the daily slice when multiple workstreams are active", () => {
+  it("keeps cross-area visibility while preserving the full ranked backlog", () => {
     const plan = buildTodayPlan(
       {
         tasks: [
@@ -145,6 +146,28 @@ describe("today planner", () => {
             isOverdue: false,
             isBlocked: false,
           },
+          {
+            id: "htg-4",
+            source: "asana",
+            sourceId: "7",
+            area: "HTG",
+            title: "Fourth HTG draft",
+            status: "open",
+            isOverdue: false,
+            isBlocked: false,
+            dueDate: "2026-03-08",
+          },
+          {
+            id: "tlw-2",
+            source: "todoist",
+            sourceId: "8",
+            area: "TLW",
+            title: "Second TLW follow-up",
+            status: "open",
+            isOverdue: false,
+            isBlocked: false,
+            dueDate: "2026-03-08",
+          },
         ],
         calendarEvents: [],
         articleEntries: [],
@@ -164,10 +187,64 @@ describe("today planner", () => {
       new Date("2026-03-06T12:00:00.000Z"),
     );
 
-    expect(plan.rankedTasks).toHaveLength(5);
-    expect(plan.rankedTasks.some((task) => task.area === "TLW")).toBe(true);
-    expect(plan.rankedTasks.some((task) => task.area === "CREATED_WORKSHOP")).toBe(true);
-    expect(plan.rankedTasks[0]?.area).toBe("HTG");
+    expect(plan.priorityTasks).toHaveLength(5);
+    expect(plan.priorityTasks.some((task) => task.area === "TLW")).toBe(true);
+    expect(plan.priorityTasks.some((task) => task.area === "CREATED_WORKSHOP")).toBe(true);
+    expect(plan.priorityTasks[0]?.area).toBe("HTG");
+    expect(plan.otherTasks.length).toBeGreaterThan(0);
+    expect(plan.rankedTasks.length).toBe(8);
+  });
+
+  it("caps HTG priority tasks while still surfacing overflow work lower down", () => {
+    const tasks: NormalizedTask[] = [
+      ...Array.from({ length: 6 }, (_, index) => ({
+        id: `htg-${index + 1}`,
+        source: "asana" as const,
+        sourceId: String(index + 1),
+        area: "HTG" as const,
+        title: `HTG article ${index + 1}`,
+        status: "open" as const,
+        isOverdue: index < 2,
+        isBlocked: false,
+        dueDate: "2026-03-06",
+      })),
+      {
+        id: "tlw-1",
+        source: "todoist",
+        sourceId: "10",
+        area: "TLW",
+        title: "TLW customer follow-up",
+        status: "open",
+        isOverdue: false,
+        isBlocked: false,
+        dueDate: "2026-03-06",
+      },
+    ];
+
+    const plan = buildTodayPlan(
+      {
+        tasks,
+        calendarEvents: [],
+        articleEntries: [],
+        warnings: [],
+        debugRecord: {
+          date: "2026-03-06",
+          generatedAt: "2026-03-06T12:00:00.000Z",
+          providerSummaries: {},
+          normalizedInputPreview: {
+            tasks: [],
+            calendarEvents: [],
+            articleEntries: [],
+          },
+        },
+      },
+      settings,
+      new Date("2026-03-06T12:00:00.000Z"),
+    );
+
+    expect(plan.priorityTasks.filter((task) => task.area === "HTG")).toHaveLength(3);
+    expect(plan.otherTasks.some((task) => task.area === "HTG")).toBe(true);
+    expect(plan.priorityTasks.some((task) => task.area === "TLW")).toBe(true);
   });
 
   it("promotes created workshop when sponsor risk is present", () => {
@@ -216,6 +293,7 @@ describe("today planner", () => {
     );
 
     expect(plan.rankedTasks[0]?.area).toBe("CREATED_WORKSHOP");
+    expect(plan.priorityTasks[0]?.area).toBe("CREATED_WORKSHOP");
     expect(plan.warnings[0]).toContain("Sponsor");
   });
 
