@@ -15,7 +15,7 @@ export async function requireApiSession() {
 }
 
 export async function requireFounderApiAccess(request: NextRequest) {
-  const apiKey = request.headers.get("x-onyx-api-key")?.trim();
+  const apiKey = getFounderApiKeyFromRequest(request);
   if (apiKey) {
     const credential = await authenticateGptApiToken(apiKey);
     if (credential) {
@@ -36,6 +36,25 @@ export async function requireFounderApiAccess(request: NextRequest) {
     email: session.email,
     authMethod: "session" as const,
   };
+}
+
+function getFounderApiKeyFromRequest(request: NextRequest) {
+  const legacyHeader = request.headers.get("x-onyx-api-key")?.trim();
+  if (legacyHeader) {
+    return legacyHeader;
+  }
+
+  const authorization = request.headers.get("authorization")?.trim();
+  if (!authorization) {
+    return null;
+  }
+
+  const bearerMatch = authorization.match(/^Bearer\s+(.+)$/i);
+  if (bearerMatch) {
+    return bearerMatch[1]?.trim() ?? null;
+  }
+
+  return authorization;
 }
 
 export async function clearSessionCookie() {
