@@ -674,16 +674,17 @@ function toYaml(value: unknown, indent = 0): string {
   if (value && typeof value === "object") {
     return Object.entries(value)
       .map(([key, entry]) => {
+        const formattedKey = formatKey(key);
         if (isScalar(entry)) {
-          return `${prefix}${key}: ${formatScalar(entry)}`;
+          return `${prefix}${formattedKey}: ${formatScalar(entry)}`;
         }
 
         if (Array.isArray(entry) && entry.length === 0) {
-          return `${prefix}${key}: []`;
+          return `${prefix}${formattedKey}: []`;
         }
 
         const nested = toYaml(entry, indent + 1);
-        return `${prefix}${key}:\n${nested}`;
+        return `${prefix}${formattedKey}:\n${nested}`;
       })
       .join("\n");
   }
@@ -710,4 +711,12 @@ function formatScalar(value: unknown) {
   }
 
   return stringValue;
+}
+
+function formatKey(key: string) {
+  if (/^\d+$/.test(key) || /[:{}\[\],&*#?|<>=!%@`]/.test(key) || /^\s|\s$/.test(key)) {
+    return JSON.stringify(key);
+  }
+
+  return key;
 }
