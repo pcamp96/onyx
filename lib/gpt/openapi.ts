@@ -1,4 +1,4 @@
-import type { PlannerTodayResult, PlannerWeekResult } from "@/lib/core/types";
+import type { PlannerIdeasResult, PlannerTodayResult, PlannerWeekResult } from "@/lib/core/types";
 import { getServerEnv } from "@/lib/config/env";
 
 const sampleTodayResponse: PlannerTodayResult = {
@@ -201,6 +201,41 @@ const sampleCaptureResponse = {
   status: "open",
   createdAt: "2026-03-07T14:10:00.000Z",
   createdBy: "user-1",
+};
+
+const sampleIdeasResponse: PlannerIdeasResult = {
+  summary: {
+    articlesSubmittedThisWeek: 2,
+    weeklyMinimum: 3,
+    weeklyGoal: 5,
+    remainingToMinimum: 1,
+    remainingToGoal: 3,
+    estimatedPaySoFar: 650,
+  },
+  primaryFocus: "How-To Geek output",
+  contentPrompts: [
+    {
+      category: "Problem/Solution",
+      project: "The Laser Workshop",
+      prompt: "I keep seeing the same problem in The Laser Workshop: quoting friction slows the feedback loop. My current fix is showing the exact place where interest turns into drop-off.",
+      hook: "A lot of product direction gets clearer once the underlying bottleneck is obvious.",
+    },
+    {
+      category: "Curiosity/question",
+      project: "Onyx",
+      prompt: "Question I'm exploring in Onyx: how much of daily planning should be visible to the founder? Right now I suspect the answer is more than most tools show.",
+      hook: "I learn faster when I publish the open question before I have the polished answer.",
+    },
+    {
+      category: "Build in public",
+      project: "Created Workshop",
+      prompt: "Today I pushed sponsor-facing workshop work higher only when the deadline pressure was real. The hard part was deciding when urgency is signal instead of noise.",
+      hook: "Building Created Workshop is forcing me to make real tradeoffs instead of collecting ideas.",
+    },
+  ],
+  warnings: ["One article remains to hit the weekly minimum."],
+  rankedContext: sampleWeekResponse.rankedPriorities,
+  generatedAt: "2026-03-07T14:05:00.000Z",
 };
 
 function buildServerDescription(appUrl: string) {
@@ -450,6 +485,28 @@ function buildSchemaComponents() {
           generatedAt: { type: "string", format: "date-time" },
         },
       },
+      IdeasPlanResponse: {
+        type: "object",
+        additionalProperties: false,
+        required: ["summary", "primaryFocus", "contentPrompts", "warnings", "rankedContext", "generatedAt"],
+        properties: {
+          summary: { $ref: "#/components/schemas/PlannerSummary" },
+          primaryFocus: { type: "string", minLength: 1 },
+          contentPrompts: {
+            type: "array",
+            items: { $ref: "#/components/schemas/ContentPrompt" },
+          },
+          warnings: {
+            type: "array",
+            items: { type: "string", minLength: 1 },
+          },
+          rankedContext: {
+            type: "array",
+            items: { $ref: "#/components/schemas/RankedTask" },
+          },
+          generatedAt: { type: "string", format: "date-time" },
+        },
+      },
       CaptureItemRequest: {
         type: "object",
         additionalProperties: false,
@@ -517,6 +574,44 @@ export function buildCanonicalOpenApiSpec() {
                     todayPlan: {
                       summary: "Sample /today response",
                       value: sampleTodayResponse,
+                    },
+                  },
+                },
+              },
+            },
+            "401": {
+              description: "Missing or invalid API key.",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                  examples: {
+                    unauthorized: {
+                      value: { error: "Unauthorized" },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      "/api/founder/ideas": {
+        get: {
+          operationId: "getFounderContentIdeas",
+          summary: "Get current posting and build-in-public ideas",
+          description:
+            "Call this when the user explicitly asks for post ideas, content angles, or build-in-public prompts tied to current work. Use the returned contentPrompts directly instead of inventing unsupported ideas.",
+          security: [{ OnyxApiKey: [] }],
+          responses: {
+            "200": {
+              description: "Current content ideas derived from active priorities, warnings, and pace.",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/IdeasPlanResponse" },
+                  examples: {
+                    ideasPlan: {
+                      summary: "Sample /ideas response",
+                      value: sampleIdeasResponse,
                     },
                   },
                 },

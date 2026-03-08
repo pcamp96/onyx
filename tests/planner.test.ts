@@ -75,6 +75,101 @@ describe("today planner", () => {
     expect(plan.primaryFocus).toBe("How-To Geek output");
   });
 
+  it("keeps cross-area visibility in the daily slice when multiple workstreams are active", () => {
+    const plan = buildTodayPlan(
+      {
+        tasks: [
+          {
+            id: "htg-1",
+            source: "asana",
+            sourceId: "1",
+            area: "HTG",
+            title: "Submit HTG article",
+            status: "open",
+            isOverdue: true,
+            isBlocked: false,
+            dueDate: "2026-03-06",
+          },
+          {
+            id: "htg-2",
+            source: "asana",
+            sourceId: "2",
+            area: "HTG",
+            title: "Second HTG draft",
+            status: "open",
+            isOverdue: true,
+            isBlocked: false,
+            dueDate: "2026-03-06",
+          },
+          {
+            id: "htg-3",
+            source: "asana",
+            sourceId: "3",
+            area: "HTG",
+            title: "Third HTG draft",
+            status: "open",
+            isOverdue: false,
+            isBlocked: false,
+            dueDate: "2026-03-07",
+          },
+          {
+            id: "tlw-1",
+            source: "todoist",
+            sourceId: "4",
+            area: "TLW",
+            title: "Ship TLW follow-up",
+            status: "open",
+            isOverdue: false,
+            isBlocked: false,
+            dueDate: "2026-03-07",
+          },
+          {
+            id: "cw-1",
+            source: "todoist",
+            sourceId: "5",
+            area: "CREATED_WORKSHOP",
+            title: "Prep Created Workshop sponsor notes",
+            status: "open",
+            isOverdue: false,
+            isBlocked: false,
+            sponsorRisk: true,
+            dueDate: "2026-03-07",
+          },
+          {
+            id: "admin-1",
+            source: "todoist",
+            sourceId: "6",
+            area: "ADMIN",
+            title: "Low priority admin cleanup",
+            status: "open",
+            isOverdue: false,
+            isBlocked: false,
+          },
+        ],
+        calendarEvents: [],
+        articleEntries: [],
+        warnings: [],
+        debugRecord: {
+          date: "2026-03-06",
+          generatedAt: "2026-03-06T12:00:00.000Z",
+          providerSummaries: {},
+          normalizedInputPreview: {
+            tasks: [],
+            calendarEvents: [],
+            articleEntries: [],
+          },
+        },
+      },
+      settings,
+      new Date("2026-03-06T12:00:00.000Z"),
+    );
+
+    expect(plan.rankedTasks).toHaveLength(5);
+    expect(plan.rankedTasks.some((task) => task.area === "TLW")).toBe(true);
+    expect(plan.rankedTasks.some((task) => task.area === "CREATED_WORKSHOP")).toBe(true);
+    expect(plan.rankedTasks[0]?.area).toBe("HTG");
+  });
+
   it("promotes created workshop when sponsor risk is present", () => {
     const plan = buildTodayPlan(
       {

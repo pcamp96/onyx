@@ -262,6 +262,18 @@ export interface PlannerWeekResult {
   generatedAt?: string;
 }
 
+export interface PlannerIdeasResult {
+  summary: PlannerSummary;
+  primaryFocus: string;
+  contentPrompts: ContentPrompt[];
+  warnings: string[];
+  rankedContext: Pick<
+    RankedTask,
+    "id" | "source" | "sourceId" | "sourceUrl" | "area" | "title" | "status" | "dueDate" | "isOverdue" | "isBlocked" | "score" | "rank" | "reason" | "scoreBreakdown"
+  >[];
+  generatedAt?: string;
+}
+
 export interface PlanningSnapshot {
   id: string;
   type: "today" | "week";

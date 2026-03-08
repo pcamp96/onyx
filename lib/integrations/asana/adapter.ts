@@ -2,6 +2,29 @@ import { isOverdue } from "@/lib/utils/time";
 import { IntegrationRequestError } from "@/lib/integrations/errors";
 import type { IntegrationAdapter, IntegrationSyncResult, SyncContext } from "@/lib/integrations/interfaces";
 
+const HTG_STATUS_FIELD_NAME = "HTG Status";
+const HTG_APPROVED_STATUS = "approved";
+const HTG_SUBMITTED_STATUS = "submitted";
+
+type AsanaCustomField = {
+  name?: string;
+  display_value?: string | null;
+  enum_value?: {
+    name?: string | null;
+  } | null;
+};
+
+type AsanaTask = {
+  gid: string;
+  name: string;
+  due_on?: string;
+  due_at?: string;
+  completed?: boolean;
+  completed_at?: string | null;
+  projects?: Array<{ name: string }>;
+  custom_fields?: AsanaCustomField[];
+};
+
 function pickArea(projectName?: string) {
   const label = (projectName || "").toLowerCase();
   if (label.includes("htg") || label.includes("how-to geek")) {
@@ -14,6 +37,43 @@ function pickArea(projectName?: string) {
     return "CREATED_WORKSHOP" as const;
   }
   return "ADMIN" as const;
+}
+
+function normalizeFieldValue(value?: string | null) {
+  return value?.trim().toLowerCase() ?? "";
+}
+
+function getCustomFieldValue(task: AsanaTask, fieldName: string) {
+  const field = task.custom_fields?.find((entry) => normalizeFieldValue(entry.name) === normalizeFieldValue(fieldName));
+  if (!field) {
+    return "";
+  }
+
+  return normalizeFieldValue(field.enum_value?.name ?? field.display_value);
+}
+
+function shouldIncludeAsanaTask(task: AsanaTask) {
+  if (task.completed || task.completed_at) {
+    return false;
+  }
+
+  const dueAt = task.due_at ?? task.due_on;
+  if (!dueAt) {
+    return false;
+  }
+
+  const projectName = task.projects?.[0]?.name;
+  const area = pickArea(projectName);
+  if (area !== "HTG") {
+    return true;
+  }
+
+  const htgStatus = getCustomFieldValue(task, HTG_STATUS_FIELD_NAME);
+  if (!htgStatus || htgStatus === HTG_SUBMITTED_STATUS) {
+    return false;
+  }
+
+  return htgStatus === HTG_APPROVED_STATUS;
 }
 
 export class AsanaAdapter implements IntegrationAdapter {
@@ -54,14 +114,14 @@ export class AsanaAdapter implements IntegrationAdapter {
     const params = new URLSearchParams({
       assignee: "me",
       workspace: workspaceId,
-      opt_fields: "name,due_on,completed,projects.name",
+      opt_fields: "name,due_on,due_at,completed,completed_at,projects.name,custom_fields.name,custom_fields.display_value,custom_fields.enum_value.name",
     });
     const payload = await this.fetchAsana<{
-      data?: Array<{ gid: string; name: string; due_on?: string; completed?: boolean; projects?: Array<{ name: string }> }>;
+      data?: AsanaTask[];
     }>(`https://app.asana.com/api/1.0/tasks?${params.toString()}`, context.secret);
 
-    const tasks = (payload.data ?? []).map((task) => {
-      const dueAt = task.due_on ? `${task.due_on}T17:00:00.000Z` : undefined;
+    const tasks = (payload.data ?? []).filter(shouldIncludeAsanaTask).map((task) => {
+      const dueAt = task.due_at ?? (task.due_on ? `${task.due_on}T17:00:00.000Z` : undefined);
       const projectName = task.projects?.[0]?.name;
 
       return {

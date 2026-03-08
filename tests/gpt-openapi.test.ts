@@ -20,6 +20,7 @@ describe("canonical openapi schema", () => {
     expect(schema.servers[0]?.description?.toLowerCase()).toContain("externally reachable");
     expect(Object.keys(schema.paths)).toEqual([
       "/api/founder/today",
+      "/api/founder/ideas",
       "/api/founder/week",
       "/api/founder/capture",
     ]);
@@ -29,6 +30,7 @@ describe("canonical openapi schema", () => {
       name: "Authorization",
     });
     expect(schema.paths["/api/founder/today"].get.operationId).toBe("getFounderDailyPriorities");
+    expect(schema.paths["/api/founder/ideas"].get.operationId).toBe("getFounderContentIdeas");
     expect(schema.paths["/api/founder/week"].get.operationId).toBe("getFounderWeeklyOverview");
     expect(schema.paths["/api/founder/capture"].post["x-openai-isConsequential"]).toBe(true);
     expect(schema.components.schemas.TodayPlanResponse.additionalProperties).toBe(false);
