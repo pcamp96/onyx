@@ -5,8 +5,11 @@ import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { CopyButton } from "@/components/ui/copy-button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { FormField } from "@/components/ui/form-field";
+import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/ui/page-header";
 import { SectionCard } from "@/components/ui/section-card";
+import { Textarea } from "@/components/ui/textarea";
 import type { GptSetupData } from "@/lib/gpt/types";
 
 type Props = {
@@ -60,6 +63,50 @@ export function GptSetupPanel({ initialSetup }: Props) {
     }
   }
 
+  function setPreference<Key extends keyof GptSetupData["preferences"]>(key: Key, value: GptSetupData["preferences"][Key]) {
+    setSetup((current) => ({
+      ...current,
+      preferences: {
+        ...current.preferences,
+        [key]: value,
+      },
+    }));
+  }
+
+  function setPreferenceLines(
+    key: "toneRules" | "responseStyleRules" | "priorityRules" | "toolRules" | "contentRules" | "constraints",
+    value: string,
+  ) {
+    setPreference(
+      key,
+      value
+        .split("\n")
+        .map((entry) => entry.trim())
+        .filter(Boolean),
+    );
+  }
+
+  function savePreferences() {
+    setMessage(null);
+
+    startTransition(async () => {
+      const response = await fetch("/api/gpt/setup", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(setup.preferences),
+      });
+
+      const payload = (await response.json()) as GptSetupData & { error?: string };
+      if (!response.ok) {
+        setMessage(payload.error ?? "Failed to save GPT preferences.");
+        return;
+      }
+
+      setSetup(payload);
+      setMessage("GPT instructions updated.");
+    });
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -95,6 +142,151 @@ export function GptSetupPanel({ initialSetup }: Props) {
 
       <SectionCard title="Custom Action Setup" description="Use this block for wiring the action schema and auth, separate from the GPT behavior instructions.">
         <LargeTextBlock value={setup.actionInstructions} />
+      </SectionCard>
+
+      <SectionCard
+        title="Instruction Variables"
+        description="Customize the variables Onyx uses to generate the final Custom GPT instructions."
+        action={
+          <Button disabled={isPending} onClick={savePreferences}>
+            {isPending ? "Saving..." : "Save variables"}
+          </Button>
+        }
+      >
+        <div className="grid gap-6 lg:grid-cols-2">
+          <div className="space-y-4">
+            <FormField label="Assistant name">
+              <Input
+                value={setup.preferences.assistantName}
+                onChange={(event) => setPreference("assistantName", event.target.value)}
+              />
+            </FormField>
+            <FormField label="User display name">
+              <Input
+                value={setup.preferences.userDisplayName}
+                onChange={(event) => setPreference("userDisplayName", event.target.value)}
+              />
+            </FormField>
+            <FormField label="Role description" hint="Example: execution operator">
+              <Input
+                value={setup.preferences.roleDescription}
+                onChange={(event) => setPreference("roleDescription", event.target.value)}
+              />
+            </FormField>
+            <FormField label="Job description">
+              <Textarea
+                rows={4}
+                value={setup.preferences.jobDescription}
+                onChange={(event) => setPreference("jobDescription", event.target.value)}
+              />
+            </FormField>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FormField label="Max tasks">
+                <Input
+                  type="number"
+                  min={1}
+                  value={setup.preferences.maxTasks}
+                  onChange={(event) => setPreference("maxTasks", Number(event.target.value) || 1)}
+                />
+              </FormField>
+              <FormField label="Max marketing actions">
+                <Input
+                  type="number"
+                  min={0}
+                  value={setup.preferences.maxMarketingActions}
+                  onChange={(event) => setPreference("maxMarketingActions", Number(event.target.value) || 0)}
+                />
+              </FormField>
+            </div>
+            <FormField label="Custom appendix" hint="Optional power-user block appended to the generated instructions.">
+              <Textarea
+                rows={6}
+                value={setup.preferences.customInstructionsAppendix ?? ""}
+                onChange={(event) => setPreference("customInstructionsAppendix", event.target.value)}
+              />
+            </FormField>
+          </div>
+
+          <div className="space-y-4">
+            <FormField label="Tone rules" hint="One line per rule.">
+              <Textarea
+                rows={5}
+                value={setup.preferences.toneRules.join("\n")}
+                onChange={(event) => setPreferenceLines("toneRules", event.target.value)}
+              />
+            </FormField>
+            <FormField label="Response style rules" hint="One line per rule.">
+              <Textarea
+                rows={5}
+                value={setup.preferences.responseStyleRules.join("\n")}
+                onChange={(event) => setPreferenceLines("responseStyleRules", event.target.value)}
+              />
+            </FormField>
+            <FormField label="Priority rules" hint="One line per rule.">
+              <Textarea
+                rows={5}
+                value={setup.preferences.priorityRules.join("\n")}
+                onChange={(event) => setPreferenceLines("priorityRules", event.target.value)}
+              />
+            </FormField>
+            <FormField label="Tool rules" hint="One line per rule.">
+              <Textarea
+                rows={5}
+                value={setup.preferences.toolRules.join("\n")}
+                onChange={(event) => setPreferenceLines("toolRules", event.target.value)}
+              />
+            </FormField>
+            <FormField label="Content rules" hint="One line per rule.">
+              <Textarea
+                rows={5}
+                value={setup.preferences.contentRules.join("\n")}
+                onChange={(event) => setPreferenceLines("contentRules", event.target.value)}
+              />
+            </FormField>
+            <FormField label="Constraints" hint="One line per rule.">
+              <Textarea
+                rows={5}
+                value={setup.preferences.constraints.join("\n")}
+                onChange={(event) => setPreferenceLines("constraints", event.target.value)}
+              />
+            </FormField>
+            <div className="grid gap-4 sm:grid-cols-3">
+              <FormField label="HTG label">
+                <Input
+                  value={setup.preferences.projectLabels.htg}
+                  onChange={(event) =>
+                    setPreference("projectLabels", {
+                      ...setup.preferences.projectLabels,
+                      htg: event.target.value,
+                    })
+                  }
+                />
+              </FormField>
+              <FormField label="TLW label">
+                <Input
+                  value={setup.preferences.projectLabels.tlw}
+                  onChange={(event) =>
+                    setPreference("projectLabels", {
+                      ...setup.preferences.projectLabels,
+                      tlw: event.target.value,
+                    })
+                  }
+                />
+              </FormField>
+              <FormField label="Created Workshop label">
+                <Input
+                  value={setup.preferences.projectLabels.createdWorkshop}
+                  onChange={(event) =>
+                    setPreference("projectLabels", {
+                      ...setup.preferences.projectLabels,
+                      createdWorkshop: event.target.value,
+                    })
+                  }
+                />
+              </FormField>
+            </div>
+          </div>
+        </div>
       </SectionCard>
 
       <SectionCard title="Action Schema" description="This is the canonical action schema the GPT action will import and call.">

@@ -1,32 +1,48 @@
 import type { PlannerSettings } from "@/lib/core/types";
 import { getServerEnv } from "@/lib/config/env";
 import { buildCanonicalOpenApiSpec, buildCanonicalOpenApiYaml, getSampleTodayResponse } from "@/lib/gpt/openapi";
-import type { GptApiCredentialRecord, GptInstructionTemplateInput, GptSetupData } from "@/lib/gpt/types";
+import type { GptApiCredentialRecord, GptInstructionTemplateInput, GptSetupData, GptSetupPreferences } from "@/lib/gpt/types";
 
 const AUTH_HEADER_NAME = "X-Onyx-API-Key";
 
 export function buildGptInstructions(input: GptInstructionTemplateInput) {
-  const greeting = input.displayName ? `You are assisting ${input.displayName} through Onyx.` : "You are assisting the user through Onyx.";
+  const { preferences } = input;
+  const introLine = `You are ${preferences.assistantName}, ${preferences.userDisplayName}'s ${preferences.roleDescription}.`;
+  const limitsLine =
+    preferences.maxMarketingActions > 0
+      ? `Constraints: Max ${preferences.maxTasks} tasks. Max ${preferences.maxMarketingActions} marketing or content action.`
+      : `Constraints: Max ${preferences.maxTasks} tasks.`;
+  const appendix = preferences.customInstructionsAppendix?.trim();
 
   return [
-    greeting,
+    introLine,
+    `Your job: ${preferences.jobDescription}`,
     "Onyx is a priority engine. It ranks what the user should do next. It is not a scheduler, calendar assistant, or time-blocking tool.",
-    "Use the Onyx API instead of guessing priorities.",
-    `Call GET ${input.baseUrl}/api/founder/today only when the user asks what to do today, what should happen first, or what deserves immediate execution attention.`,
-    `Call GET ${input.baseUrl}/api/founder/week only when the user asks about weekly pace, weekly priorities, deadline risk, or whether they are behind this week.`,
-    `Call POST ${input.baseUrl}/api/founder/capture only when the user explicitly wants to save a task, reminder, or idea into Onyx.`,
-    "Do not call capture for read-only planning questions. Do not invent unsupported actions. Do not refer to any /ideas endpoint because it is not part of this API.",
-    "Preserve ranked order from the API exactly. Never re-rank, reshuffle, or average together returned tasks.",
-    "Treat calendar constraints as limits on execution capacity, not as the planner itself.",
-    "Highlight warnings, deadline risks, and pace gaps clearly whenever they are present.",
-    `If the user asks for content, publishing, social post, or build-in-public ideas tied to current work, call GET ${input.baseUrl}/api/founder/today for near-term or today-oriented prompts and call GET ${input.baseUrl}/api/founder/week for broader weekly themes.`,
-    "Use contentPrompts when they are present. Keep them secondary to execution priorities unless the user explicitly asks only for content ideas.",
-    "Keep answers concise, operational, and execution-focused.",
-    "Default work order is HTG first, TLW second, and Created Workshop only when pressure, sponsor obligation, or a real deadline makes it urgent.",
+    section("Tone", preferences.toneRules),
+    section("Response Style", preferences.responseStyleRules),
+    section("Priority Rules", preferences.priorityRules),
+    section("Tool Rules", [
+      ...preferences.toolRules,
+      "Use the Onyx API instead of guessing priorities.",
+      `Call GET ${input.baseUrl}/api/founder/today when the user asks what to do today, what should happen first, or what deserves immediate execution attention.`,
+      `Call GET ${input.baseUrl}/api/founder/week when the user asks about weekly pace, weekly priorities, deadline risk, or whether they are behind this week.`,
+      `Call POST ${input.baseUrl}/api/founder/capture only when the user explicitly wants to save a task, reminder, or idea into Onyx.`,
+    ]),
+    section("Content Rules", preferences.contentRules),
+    section("Constraints", [
+      ...preferences.constraints,
+      "Do not refer to any /ideas endpoint because it is not part of this API.",
+      "Preserve ranked order from the API exactly. Never re-rank, reshuffle, or average together returned tasks.",
+      "Treat calendar constraints as limits on execution capacity, not as the planner itself.",
+      "Highlight warnings, deadline risks, and pace gaps clearly whenever they are present.",
+    ]),
+    `Project labels: ${preferences.projectLabels.htg}, ${preferences.projectLabels.tlw}, ${preferences.projectLabels.createdWorkshop}.`,
+    limitsLine,
     `Authentication: ${input.authTypeLabel}. ${input.authNotes}`,
     `Action schema URL: ${input.schemaUrl}`,
     `Timezone context: ${input.timezone}.`,
-  ].join("\n\n");
+    appendix ? `Additional instructions:\n${appendix}` : null,
+  ].filter(Boolean).join("\n\n");
 }
 
 function buildAuthNotes() {
@@ -53,7 +69,7 @@ function buildActionInstructions(params: {
 export function buildGptSetupData(params: {
   credential: GptApiCredentialRecord | null;
   settings: PlannerSettings;
-  displayName?: string;
+  preferences: GptSetupPreferences;
 }): GptSetupData {
   const { APP_URL } = getServerEnv();
   const baseUrl = APP_URL.replace(/\/$/, "");
@@ -70,7 +86,7 @@ export function buildGptSetupData(params: {
     authTypeLabel: "API Key",
     authNotes,
     timezone: params.settings.timezone,
-    displayName: params.displayName,
+    preferences: params.preferences,
   });
 
   return {
@@ -106,6 +122,7 @@ export function buildGptSetupData(params: {
       "Run /today and confirm the ranked task list and warnings appear correctly.",
     ],
     sampleTodayResponse: getSampleTodayResponse(),
+    preferences: params.preferences,
     credential: params.credential
       ? {
           label: params.credential.label,
@@ -121,4 +138,8 @@ export function buildGptSetupData(params: {
           status: "missing",
         },
   };
+}
+
+function section(title: string, lines: string[]) {
+  return [title, ...lines].join("\n");
 }

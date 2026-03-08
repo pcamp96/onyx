@@ -21,7 +21,34 @@ export interface GptInstructionTemplateInput {
   authTypeLabel: string;
   authNotes: string;
   timezone: PlannerSettings["timezone"];
-  displayName?: string;
+  preferences: GptSetupPreferences;
+}
+
+export interface GptProjectLabels {
+  htg: string;
+  tlw: string;
+  createdWorkshop: string;
+}
+
+export interface GptSetupPreferences {
+  id: string;
+  userId: string;
+  assistantName: string;
+  userDisplayName: string;
+  roleDescription: string;
+  jobDescription: string;
+  toneRules: string[];
+  responseStyleRules: string[];
+  priorityRules: string[];
+  toolRules: string[];
+  contentRules: string[];
+  constraints: string[];
+  projectLabels: GptProjectLabels;
+  maxTasks: number;
+  maxMarketingActions: number;
+  customInstructionsAppendix?: string;
+  updatedAt: string;
+  updatedBy: string;
 }
 
 export interface GptSetupData {
@@ -38,6 +65,7 @@ export interface GptSetupData {
   conversationStarters: string[];
   checklist: string[];
   sampleTodayResponse: PlannerTodayResult;
+  preferences: GptSetupPreferences;
   credential: {
     label: string;
     status: "active" | "revoked" | "missing";
