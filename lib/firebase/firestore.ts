@@ -33,6 +33,27 @@ type QueryOptions = {
   limit?: number;
 };
 
+type StructuredWhere =
+  | {
+      fieldFilter: {
+        field: { fieldPath: string };
+        op: "EQUAL";
+        value: FirestoreValue;
+      };
+    }
+  | {
+      compositeFilter: {
+        op: "AND";
+        filters: Array<{
+          fieldFilter: {
+            field: { fieldPath: string };
+            op: "EQUAL";
+            value: FirestoreValue;
+          };
+        }>;
+      };
+    };
+
 type SnapshotData<T> = T | undefined;
 
 const FIRESTORE_SCOPE = ["https://www.googleapis.com/auth/datastore"];
@@ -212,27 +233,54 @@ async function setDocument(path: string, input: object, options?: { merge?: bool
   return payload;
 }
 
-async function runCollectionQuery<T>(path: string, options: QueryOptions) {
-  const { url, collectionId } = queryUrl(path);
-  const whereFilters = options.filters.map((filter) => ({
+async function deleteDocument(path: string) {
+  const response = await firestoreFetch(documentUrl(path), {
+    method: "DELETE",
+  });
+
+  if (response.status === 404) {
+    return;
+  }
+
+  if (!response.ok) {
+    throw new Error(`Failed to delete document ${path} (${response.status})`);
+  }
+}
+
+function buildWhereClause(filters: QueryFilter[]): StructuredWhere | undefined {
+  if (filters.length === 0) {
+    return undefined;
+  }
+
+  const encodedFilters = filters.map((filter) => ({
     fieldFilter: {
       field: { fieldPath: filter.field },
-      op: "EQUAL",
+      op: "EQUAL" as const,
       value: encodeValue(filter.value),
     },
   }));
+
+  if (encodedFilters.length === 1) {
+    return encodedFilters[0];
+  }
+
+  return {
+    compositeFilter: {
+      op: "AND",
+      filters: encodedFilters,
+    },
+  };
+}
+
+async function runCollectionQuery<T>(path: string, options: QueryOptions) {
+  const { url, collectionId } = queryUrl(path);
 
   const response = await firestoreFetch(url, {
     method: "POST",
     body: JSON.stringify({
       structuredQuery: {
         from: [{ collectionId }],
-        where: whereFilters.length === 0 ? undefined : {
-          compositeFilter: {
-            op: "AND",
-            filters: whereFilters,
-          },
-        },
+        where: buildWhereClause(options.filters),
         orderBy: options.orders.map((order) => ({
           field: { fieldPath: order.field },
           direction: order.direction === "desc" ? "DESCENDING" : "ASCENDING",
@@ -258,18 +306,7 @@ async function runCollectionGroupQuery<T>(collectionId: string, options: QueryOp
     body: JSON.stringify({
       structuredQuery: {
         from: [{ collectionId, allDescendants: true }],
-        where: options.filters.length === 0 ? undefined : {
-          compositeFilter: {
-            op: "AND",
-            filters: options.filters.map((filter) => ({
-              fieldFilter: {
-                field: { fieldPath: filter.field },
-                op: "EQUAL",
-                value: encodeValue(filter.value),
-              },
-            })),
-          },
-        },
+        where: buildWhereClause(options.filters),
         orderBy: options.orders.map((order) => ({
           field: { fieldPath: order.field },
           direction: order.direction === "desc" ? "DESCENDING" : "ASCENDING",
@@ -327,22 +364,26 @@ class Query<T> {
     protected readonly options: QueryOptions = { filters: [], orders: [] },
   ) {}
 
+  protected clone(options: QueryOptions): Query<T> {
+    return new Query<T>(this.path, options);
+  }
+
   where(field: string, op: "==", value: Primitive) {
-    return new Query<T>(this.path, {
+    return this.clone({
       ...this.options,
       filters: [...this.options.filters, { field, op, value }],
     });
   }
 
   orderBy(field: string, direction: "asc" | "desc" = "asc") {
-    return new Query<T>(this.path, {
+    return this.clone({
       ...this.options,
       orders: [...this.options.orders, { field, direction }],
     });
   }
 
   limit(limit: number) {
-    return new Query<T>(this.path, {
+    return this.clone({
       ...this.options,
       limit,
     });
@@ -354,6 +395,10 @@ class Query<T> {
 }
 
 class CollectionGroupQuery<T> extends Query<T> {
+  protected override clone(options: QueryOptions) {
+    return new CollectionGroupQuery<T>(this.path, options);
+  }
+
   async get() {
     return new QuerySnapshot<T>(await runCollectionGroupQuery<T>(this.path, this.options));
   }
@@ -374,12 +419,24 @@ class DocumentReference<T> {
     await setDocument(this.path, data, options);
   }
 
+  async delete() {
+    await deleteDocument(this.path);
+  }
+
   collection<TChild = Record<string, unknown>>(name: string) {
     return new CollectionReference<TChild>(`${this.path}/${name}`);
   }
 }
 
 class CollectionReference<T> extends Query<T> {
+  constructor(path: string, options?: QueryOptions) {
+    super(path, options);
+  }
+
+  protected override clone(options: QueryOptions) {
+    return new CollectionReference<T>(this.path, options);
+  }
+
   doc(id = crypto.randomUUID()) {
     return new DocumentReference<T>(`${this.path}/${id}`);
   }

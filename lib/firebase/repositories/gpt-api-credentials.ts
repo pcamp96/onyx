@@ -4,9 +4,22 @@ import type { GptApiCredentialRecord } from "@/lib/gpt/types";
 
 const SUBCOLLECTION = "gpt_api_credentials";
 const DEFAULT_ID = "default";
+const LOOKUP_COLLECTION = "gpt_api_credential_lookup";
+
+type GptApiCredentialLookupRecord = {
+  tokenHash: string;
+  userId: string;
+  credentialId: string;
+  status: GptApiCredentialRecord["status"];
+  updatedAt: string;
+};
 
 function credentialRef(userId: string) {
   return userDocument(userId).collection<GptApiCredentialRecord>(SUBCOLLECTION).doc(DEFAULT_ID);
+}
+
+function lookupRef(tokenHash: string) {
+  return getDb().collection<GptApiCredentialLookupRecord>(LOOKUP_COLLECTION).doc(tokenHash);
 }
 
 export const gptApiCredentialsRepository = {
@@ -32,6 +45,18 @@ export const gptApiCredentialsRepository = {
     };
 
     await credentialRef(userId).set(record, { merge: true });
+    await lookupRef(record.tokenHash).set({
+      tokenHash: record.tokenHash,
+      userId,
+      credentialId: DEFAULT_ID,
+      status: record.status,
+      updatedAt: timestamp,
+    });
+
+    if (current?.tokenHash && current.tokenHash !== record.tokenHash) {
+      await lookupRef(current.tokenHash).delete();
+    }
+
     return record;
   },
 
@@ -50,6 +75,7 @@ export const gptApiCredentialsRepository = {
     };
 
     await credentialRef(userId).set(record, { merge: true });
+    await lookupRef(current.tokenHash).delete();
     return record;
   },
 
@@ -63,18 +89,35 @@ export const gptApiCredentialsRepository = {
     );
   },
 
-  async findByTokenHash(tokenHash: string): Promise<GptApiCredentialRecord | null> {
-    const snapshot = await getDb()
-      .collectionGroup<GptApiCredentialRecord>(SUBCOLLECTION)
-      .where("tokenHash", "==", tokenHash)
-      .limit(1)
-      .get();
+  async ensureLookup(userId: string) {
+    const current = await this.get(userId);
+    if (!current || current.status !== "active") {
+      return current;
+    }
 
-    const doc = snapshot.docs[0];
-    if (!doc) {
+    await lookupRef(current.tokenHash).set({
+      tokenHash: current.tokenHash,
+      userId,
+      credentialId: DEFAULT_ID,
+      status: current.status,
+      updatedAt: nowIso(),
+    });
+
+    return current;
+  },
+
+  async findByTokenHash(tokenHash: string): Promise<GptApiCredentialRecord | null> {
+    const lookupSnapshot = await lookupRef(tokenHash).get();
+    if (!lookupSnapshot.exists) {
       return null;
     }
 
-    return toPlainObject(doc.data() as unknown as GptApiCredentialRecord);
+    const lookup = toPlainObject(lookupSnapshot.data() as unknown as GptApiCredentialLookupRecord);
+    const record = await this.get(lookup.userId);
+    if (!record || record.tokenHash !== tokenHash) {
+      return null;
+    }
+
+    return record;
   },
 };

@@ -7,7 +7,7 @@ import { buildGptSetupData } from "@/lib/gpt/setup";
 
 export async function getGptSetupData(userId: string) {
   const [credential, settings, user] = await Promise.all([
-    gptApiCredentialsRepository.get(userId),
+    gptApiCredentialsRepository.ensureLookup(userId),
     plannerSettingsRepository.get(userId),
     usersRepository.get(userId),
   ]);
