@@ -74,7 +74,7 @@ export function GptSetupPanel({ initialSetup }: Props) {
   }
 
   function setPreferenceLines(
-    key: "toneRules" | "responseStyleRules" | "priorityRules" | "toolRules" | "contentRules" | "constraints",
+    key: "toneRules" | "responseStyleRules" | "priorityRules" | "toolRules" | "contentRules" | "externalApiRules" | "constraints",
     value: string,
   ) {
     setPreference(
@@ -241,6 +241,16 @@ export function GptSetupPanel({ initialSetup }: Props) {
                 rows={5}
                 value={setup.preferences.contentRules.join("\n")}
                 onChange={(event) => setPreferenceLines("contentRules", event.target.value)}
+              />
+            </FormField>
+            <FormField
+              label="External API rules"
+              hint="One line per rule. Use this for linked APIs like TLW that are configured server-side through Integrations."
+            >
+              <Textarea
+                rows={6}
+                value={setup.preferences.externalApiRules.join("\n")}
+                onChange={(event) => setPreferenceLines("externalApiRules", event.target.value)}
               />
             </FormField>
             <FormField label="Constraints" hint="One line per rule.">
