@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { PlannerSettings } from "@/lib/core/types";
 import { buildDefaultGptSetupPreferences } from "@/lib/firebase/repositories/gpt-setup-preferences";
+import type { GptSetupPreferences } from "@/lib/gpt/types";
 
 process.env.APP_URL = process.env.APP_URL ?? "https://onyx.example.com";
 process.env.FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID ?? "demo-project";
@@ -110,5 +111,49 @@ describe("gpt setup generator", () => {
     expect(setup.instructions).toContain("Turn live founder priorities into clear actions and weekly leverage.");
     expect(setup.instructions).toContain("Tone\nCasual.\nDirect.");
     expect(setup.instructions).toContain("Always end with one concrete next step.");
+  });
+
+  it("fills in newly added preference arrays for legacy preference records", () => {
+    const settings: PlannerSettings = {
+      userId: "user-1",
+      weeklyArticleMinimum: 3,
+      weeklyArticleGoal: 5,
+      createdWorkshopLowPriorityEnabled: true,
+      sponsorUrgencyDays: 7,
+      maxTodayTasks: 5,
+      timezone: "America/Chicago",
+      workdays: [1, 2, 3, 4, 5],
+      sundayNoWork: true,
+      calendarEventHandling: "all_busy",
+      calendarOwnerIdentifiers: [],
+      areaWeights: {
+        HTG: 10,
+        TLW: 8,
+        CREATED_WORKSHOP: 4,
+        ADMIN: 1,
+      },
+      createdAt: "2026-03-07T00:00:00.000Z",
+      updatedAt: "2026-03-07T00:00:00.000Z",
+      updatedBy: "user-1",
+    };
+
+    const legacyPreferences = {
+      ...buildDefaultGptSetupPreferences("user-1", "user-1", "Patrick"),
+      externalApiRules: undefined,
+    } as unknown as GptSetupPreferences;
+
+    const setup = buildGptSetupData({
+      credential: null,
+      settings,
+      preferences: {
+        ...legacyPreferences,
+        externalApiRules:
+          legacyPreferences.externalApiRules ??
+          buildDefaultGptSetupPreferences("user-1", "user-1", "Patrick").externalApiRules,
+      },
+    });
+
+    expect(setup.preferences.externalApiRules.length).toBeGreaterThan(0);
+    expect(setup.instructions).toContain("External API Rules");
   });
 });
