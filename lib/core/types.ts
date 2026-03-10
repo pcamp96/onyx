@@ -223,6 +223,18 @@ export interface PlannerSummary {
   estimatedPaySoFar?: number;
 }
 
+export interface PlannerPace {
+  status: "behind" | "due_today" | "on_track";
+  weeklyMinimum: number;
+  workdaysInWeek: number;
+  workdaysElapsedBeforeToday: number;
+  dailyMinimumRate: number;
+  targetByEndOfToday: number;
+  submittedThisWeek: number;
+  behindBeforeToday: number;
+  neededTodayToStayOnPace: number;
+}
+
 export type ContentPromptCategory =
   | "Story"
   | "Opinion"
@@ -342,9 +354,13 @@ export interface TlwOperatorPlan {
 
 export interface PlannerTodayResult {
   date: string;
+  timezone: string;
   summary: PlannerSummary;
+  pace: PlannerPace;
   calendarConstraints: NormalizedCalendarEvent[];
   primaryFocus: string;
+  approvedHtgTasks: RankedTask[];
+  approvedHtgRemainingCount: number;
   priorityTasks: RankedTask[];
   otherTasks: RankedTask[];
   tomorrowTasks: RankedTask[];
@@ -358,13 +374,25 @@ export interface PlannerTodayResult {
 export type RankedTaskPreview = Pick<
   RankedTask,
   "id" | "source" | "sourceId" | "sourceUrl" | "area" | "title" | "status" | "dueDate" | "isOverdue" | "isBlocked" | "rank" | "reason"
->;
+> & {
+  dueLabel?: string;
+  isDateOnlyDue?: boolean;
+};
+
+export type CalendarConstraintPreview = NormalizedCalendarEvent & {
+  localDateLabel?: string;
+  localTimeRangeLabel?: string;
+};
 
 export interface PlannerTodayApiResult {
   date: string;
+  timezone: string;
   summary: PlannerSummary;
-  calendarConstraints: NormalizedCalendarEvent[];
+  pace: PlannerPace;
+  calendarConstraints: CalendarConstraintPreview[];
   primaryFocus: string;
+  approvedHtgTasks: RankedTaskPreview[];
+  approvedHtgRemainingCount: number;
   priorityTasks: RankedTaskPreview[];
   otherTasks: RankedTaskPreview[];
   tomorrowTasks: RankedTaskPreview[];
@@ -379,8 +407,12 @@ export interface PlannerTodayApiResult {
 export interface PlannerWeekResult {
   weekStart: string;
   weekEnd: string;
+  timezone: string;
   summary: PlannerSummary;
+  pace: PlannerPace;
   primaryFocus: string;
+  approvedHtgTasks: RankedTask[];
+  otherPriorities: RankedTask[];
   rankedPriorities: RankedTask[];
   areaPriorities: {
     HTG: RankedTask[];
@@ -396,8 +428,12 @@ export interface PlannerWeekResult {
 export interface PlannerWeekApiResult {
   weekStart: string;
   weekEnd: string;
+  timezone: string;
   summary: PlannerSummary;
+  pace: PlannerPace;
   primaryFocus: string;
+  approvedHtgTasks: RankedTaskPreview[];
+  otherPriorities: RankedTaskPreview[];
   rankedPriorities: RankedTaskPreview[];
   areaPriorities: {
     HTG: RankedTaskPreview[];

@@ -78,5 +78,6 @@ describe("asana adapter", () => {
       "Approved HTG task",
       "TLW task with due date",
     ]);
+    expect(result.tasks[0]?.dueDate).toBe("2026-03-10");
   });
 });

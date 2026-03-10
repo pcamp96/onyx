@@ -121,7 +121,7 @@ export class AsanaAdapter implements IntegrationAdapter {
     }>(`https://app.asana.com/api/1.0/tasks?${params.toString()}`, context.secret);
 
     const tasks = (payload.data ?? []).filter(shouldIncludeAsanaTask).map((task) => {
-      const dueAt = task.due_at ?? (task.due_on ? `${task.due_on}T17:00:00.000Z` : undefined);
+      const dueAt = task.due_at ?? task.due_on;
       const projectName = task.projects?.[0]?.name;
 
       return {
@@ -133,7 +133,7 @@ export class AsanaAdapter implements IntegrationAdapter {
         title: task.name,
         status: task.completed ? ("done" as const) : ("open" as const),
         dueDate: dueAt,
-        isOverdue: isOverdue(dueAt, context.now),
+        isOverdue: isOverdue(dueAt, context.now, context.timezone),
         isBlocked: false,
         projectName,
         projectId: workspaceId,

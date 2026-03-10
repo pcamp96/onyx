@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { NormalizedTask, PlannerSettings } from "@/lib/core/types";
 import { getBlockingCalendarEvents } from "@/lib/planner/calendar";
+import { toTodayApiResult } from "@/lib/planner/serializers";
 import { buildTodayPlan } from "@/lib/planner/today";
 import { buildTlwOperatorPlan } from "@/lib/planner/tlw-operator";
 import { buildWeekPlan } from "@/lib/planner/week";
@@ -74,11 +75,14 @@ describe("today planner", () => {
     );
 
     expect(plan.rankedTasks[0]?.area).toBe("HTG");
-    expect(plan.priorityTasks[0]?.area).toBe("HTG");
+    expect(plan.approvedHtgTasks[0]?.area).toBe("HTG");
+    expect(plan.priorityTasks[0]?.area).toBe("TLW");
     expect(plan.primaryFocus).toBe("How-To Geek output");
+    expect(plan.timezone).toBe("America/Chicago");
+    expect(plan.pace.status).toBe("behind");
   });
 
-  it("keeps cross-area visibility while separating tomorrow work", () => {
+  it("keeps approved HTG work separate from other lanes", () => {
     const plan = buildTodayPlan(
       {
         tasks: [
@@ -189,16 +193,18 @@ describe("today planner", () => {
       new Date("2026-03-06T12:00:00.000Z"),
     );
 
-    expect(plan.priorityTasks).toHaveLength(3);
-    expect(plan.priorityTasks[0]?.area).toBe("HTG");
-    expect(plan.priorityTasks.some((task) => task.area === "CREATED_WORKSHOP")).toBe(true);
+    expect(plan.approvedHtgTasks).toHaveLength(3);
+    expect(plan.approvedHtgRemainingCount).toBe(1);
+    expect(plan.approvedHtgTasks.every((task) => task.area === "HTG")).toBe(true);
+    expect(plan.priorityTasks).toHaveLength(1);
+    expect(plan.priorityTasks[0]?.area).toBe("CREATED_WORKSHOP");
     expect(plan.otherTasks).toHaveLength(0);
-    expect(plan.tomorrowTasks.some((task) => task.area === "TLW")).toBe(true);
-    expect(plan.tomorrowTasks.some((task) => task.area === "HTG")).toBe(true);
+    expect(plan.tomorrowTasks).toHaveLength(1);
+    expect(plan.tomorrowTasks[0]?.area).toBe("TLW");
     expect(plan.rankedTasks.length).toBe(3);
   });
 
-  it("caps HTG priority tasks while still surfacing overflow work lower down", () => {
+  it("caps approved HTG tasks in their own lane and counts overflow separately", () => {
     const tasks: NormalizedTask[] = [
       ...Array.from({ length: 6 }, (_, index) => ({
         id: `htg-${index + 1}`,
@@ -245,9 +251,10 @@ describe("today planner", () => {
       new Date("2026-03-06T12:00:00.000Z"),
     );
 
-    expect(plan.priorityTasks.filter((task) => task.area === "HTG")).toHaveLength(3);
-    expect(plan.otherTasks.some((task) => task.area === "HTG")).toBe(true);
-    expect(plan.otherTasks.some((task) => task.area === "TLW")).toBe(true);
+    expect(plan.approvedHtgTasks).toHaveLength(3);
+    expect(plan.approvedHtgRemainingCount).toBe(3);
+    expect(plan.priorityTasks.some((task) => task.area === "TLW")).toBe(true);
+    expect(plan.otherTasks.some((task) => task.area === "HTG")).toBe(false);
   });
 
   it("keeps all due and overdue tasks in the surfaced day plan", () => {
@@ -290,7 +297,7 @@ describe("today planner", () => {
     expect([...plan.priorityTasks, ...plan.otherTasks]).toHaveLength(6);
   });
 
-  it("puts tomorrow-due work into a separate tomorrow section", () => {
+  it("keeps approved HTG tasks out of the tomorrow lane", () => {
     const plan = buildTodayPlan(
       {
         tasks: [
@@ -348,8 +355,9 @@ describe("today planner", () => {
 
     expect(plan.priorityTasks).toHaveLength(1);
     expect(plan.otherTasks).toHaveLength(0);
-    expect(plan.tomorrowTasks).toHaveLength(2);
-    expect(plan.tomorrowTasks.every((task) => task.dueDate?.startsWith("2026-03-07"))).toBe(true);
+    expect(plan.approvedHtgTasks).toHaveLength(1);
+    expect(plan.tomorrowTasks).toHaveLength(1);
+    expect(plan.tomorrowTasks[0]?.area).toBe("TLW");
   });
 
   it("filters undated backlog out of the daily plan", () => {
@@ -577,11 +585,145 @@ describe("today planner", () => {
       new Date("2026-03-06T12:00:00.000Z"),
     );
 
+    expect(plan.approvedHtgTasks).toHaveLength(1);
+    expect(plan.otherPriorities.every((task) => task.area !== "HTG")).toBe(true);
     expect(plan.areaPriorities.HTG).toHaveLength(1);
     expect(plan.areaPriorities.HTG[0]?.area).toBe("HTG");
     expect(plan.areaPriorities.TLW).toHaveLength(1);
     expect(plan.areaPriorities.TLW[0]?.area).toBe("TLW");
     expect(plan.areaPriorities.CREATED_WORKSHOP).toHaveLength(1);
     expect(plan.areaPriorities.CREATED_WORKSHOP[0]?.area).toBe("CREATED_WORKSHOP");
+  });
+
+  it("uses day-based pace instead of a full-week deficit on Monday", () => {
+    const mondayPlan = buildTodayPlan(
+      {
+        tasks: [
+          {
+            id: "htg-1",
+            source: "asana",
+            sourceId: "1",
+            area: "HTG",
+            title: "Finish Monday draft",
+            status: "open",
+            isOverdue: false,
+            isBlocked: false,
+            dueDate: "2026-03-09",
+          },
+        ],
+        calendarEvents: [],
+        articleEntries: [],
+        warnings: [],
+        debugRecord: {
+          date: "2026-03-09",
+          generatedAt: "2026-03-09T14:00:00.000Z",
+          providerSummaries: {},
+          normalizedInputPreview: {
+            tasks: [],
+            calendarEvents: [],
+            articleEntries: [],
+          },
+        },
+      },
+      settings,
+      new Date("2026-03-09T14:00:00.000Z"),
+    );
+
+    expect(mondayPlan.pace.status).toBe("due_today");
+    expect(mondayPlan.pace.workdaysElapsedBeforeToday).toBe(0);
+    expect(mondayPlan.pace.behindBeforeToday).toBe(0);
+    expect(mondayPlan.pace.neededTodayToStayOnPace).toBe(2.2);
+  });
+
+  it("marks Tuesday as behind when Monday output did not happen", () => {
+    const tuesdayPlan = buildTodayPlan(
+      {
+        tasks: [
+          {
+            id: "htg-1",
+            source: "asana",
+            sourceId: "1",
+            area: "HTG",
+            title: "Finish Tuesday draft",
+            status: "open",
+            isOverdue: false,
+            isBlocked: false,
+            dueDate: "2026-03-10",
+          },
+        ],
+        calendarEvents: [],
+        articleEntries: [],
+        warnings: [],
+        debugRecord: {
+          date: "2026-03-10",
+          generatedAt: "2026-03-10T14:00:00.000Z",
+          providerSummaries: {},
+          normalizedInputPreview: {
+            tasks: [],
+            calendarEvents: [],
+            articleEntries: [],
+          },
+        },
+      },
+      settings,
+      new Date("2026-03-10T14:00:00.000Z"),
+    );
+
+    expect(tuesdayPlan.pace.status).toBe("behind");
+    expect(tuesdayPlan.pace.workdaysElapsedBeforeToday).toBe(1);
+    expect(tuesdayPlan.pace.behindBeforeToday).toBe(2.2);
+    expect(tuesdayPlan.pace.neededTodayToStayOnPace).toBe(4.4);
+  });
+
+  it("serializes local calendar labels and keeps date-only deadlines untimed", () => {
+    const plan = buildTodayPlan(
+      {
+        tasks: [
+          {
+            id: "htg-1",
+            source: "asana",
+            sourceId: "1",
+            area: "HTG",
+            title: "Date-only HTG draft",
+            status: "open",
+            isOverdue: false,
+            isBlocked: false,
+            dueDate: "2026-03-07",
+          },
+        ],
+        calendarEvents: [
+          {
+            id: "event-1",
+            source: "calendar",
+            sourceId: "event-1",
+            title: "Writer call",
+            start: "2026-03-07T15:00:00.000Z",
+            end: "2026-03-07T16:00:00.000Z",
+            allDay: false,
+            isBusy: true,
+          },
+        ],
+        articleEntries: [],
+        warnings: [],
+        debugRecord: {
+          date: "2026-03-07",
+          generatedAt: "2026-03-07T14:00:00.000Z",
+          providerSummaries: {},
+          normalizedInputPreview: {
+            tasks: [],
+            calendarEvents: [],
+            articleEntries: [],
+          },
+        },
+      },
+      settings,
+      new Date("2026-03-07T14:00:00.000Z"),
+    );
+
+    const apiResult = toTodayApiResult(plan);
+
+    expect(apiResult.calendarConstraints[0]?.localTimeRangeLabel).toBe("9:00 AM-10:00 AM");
+    expect(apiResult.approvedHtgTasks[0]?.dueLabel).toBe("Sat, Mar 7");
+    expect(apiResult.approvedHtgTasks[0]?.isDateOnlyDue).toBe(true);
   });
 });

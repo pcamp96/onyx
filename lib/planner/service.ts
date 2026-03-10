@@ -18,6 +18,7 @@ import { getIntegrationAdapter } from "@/lib/integrations/registry";
 import { getBlockingCalendarEvents } from "@/lib/planner/calendar";
 import { generateContentPrompts } from "@/lib/planner/content-prompts";
 import { summarizeArticles } from "@/lib/planner/normalizers";
+import { buildPlannerPace } from "@/lib/planner/pace";
 import { derivePrimaryFocus, deriveWarnings } from "@/lib/planner/rules";
 import { scoreTask } from "@/lib/planner/scoring";
 import { buildTodayPlan } from "@/lib/planner/today";
@@ -72,7 +73,11 @@ function compactCalendarConstraints(events: PlannerTodayResult["calendarConstrai
   }));
 }
 
-export async function syncEnabledIntegrations(now = new Date(), userId = FOUNDER_USER_ID): Promise<PlannerAggregateInput> {
+export async function syncEnabledIntegrations(
+  now = new Date(),
+  userId = FOUNDER_USER_ID,
+  timezone?: string,
+): Promise<PlannerAggregateInput> {
   const integrations = await integrationsRepository.list(userId);
   const sponsors = await sponsorProjectsRepository.list();
   const results = await Promise.all(
@@ -89,6 +94,7 @@ export async function syncEnabledIntegrations(now = new Date(), userId = FOUNDER
           config,
           secret,
           now,
+          timezone,
         });
 
         return {
@@ -172,10 +178,8 @@ export async function syncEnabledIntegrations(now = new Date(), userId = FOUNDER
 }
 
 export async function getTodayPlan(now = new Date(), userId = FOUNDER_USER_ID): Promise<PlannerTodayResult> {
-  const [settings, aggregate] = await Promise.all([
-    plannerSettingsRepository.get(userId),
-    syncEnabledIntegrations(now, userId),
-  ]);
+  const settings = await plannerSettingsRepository.get(userId);
+  const aggregate = await syncEnabledIntegrations(now, userId, settings.timezone);
   const calendarEvents = getBlockingCalendarEvents(aggregate.calendarEvents, settings);
   const result = buildTodayPlan({ ...aggregate, calendarEvents }, settings, now);
   const tlwOperatorPlan = aggregate.tlwOverview ? buildTlwOperatorPlan(aggregate.tlwOverview) : undefined;
@@ -205,10 +209,8 @@ export async function getTodayPlan(now = new Date(), userId = FOUNDER_USER_ID): 
 }
 
 export async function getWeekPlan(now = new Date(), userId = FOUNDER_USER_ID): Promise<PlannerWeekResult> {
-  const [settings, aggregate] = await Promise.all([
-    plannerSettingsRepository.get(userId),
-    syncEnabledIntegrations(now, userId),
-  ]);
+  const settings = await plannerSettingsRepository.get(userId);
+  const aggregate = await syncEnabledIntegrations(now, userId, settings.timezone);
   const calendarEvents = getBlockingCalendarEvents(aggregate.calendarEvents, settings);
   const result = buildWeekPlan({ ...aggregate, calendarEvents }, settings, now);
 
@@ -231,18 +233,16 @@ export async function getWeekPlan(now = new Date(), userId = FOUNDER_USER_ID): P
 }
 
 export async function getIdeasPlan(now = new Date(), userId = FOUNDER_USER_ID): Promise<PlannerIdeasResult> {
-  const [settings, aggregate] = await Promise.all([
-    plannerSettingsRepository.get(userId),
-    syncEnabledIntegrations(now, userId),
-  ]);
+  const settings = await plannerSettingsRepository.get(userId);
+  const aggregate = await syncEnabledIntegrations(now, userId, settings.timezone);
   const calendarEvents = getBlockingCalendarEvents(aggregate.calendarEvents, settings);
   const summary = summarizeArticles(aggregate.articleEntries, settings, now);
-  const weeklyPaceGap = summary.remainingToGoal;
+  const pace = buildPlannerPace(summary, settings, now);
   const rankedContext = aggregate.tasks
     .map((task) => scoreTask({
       task,
       settings,
-      weeklyPaceGap,
+      pace,
       calendarConstraints: calendarEvents,
       now,
     }))
@@ -252,7 +252,7 @@ export async function getIdeasPlan(now = new Date(), userId = FOUNDER_USER_ID): 
       ...task,
       rank: index + 1,
     }));
-  const warnings = [...new Set([...aggregate.warnings, ...deriveWarnings(rankedContext, settings, now)])];
+  const warnings = [...new Set([...aggregate.warnings, ...deriveWarnings(rankedContext, settings, pace, now)])];
   const primaryFocus = derivePrimaryFocus(rankedContext);
 
   return {

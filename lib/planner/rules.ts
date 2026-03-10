@@ -1,4 +1,4 @@
-import type { NormalizedTask, PlannerSettings } from "@/lib/core/types";
+import type { NormalizedTask, PlannerPace, PlannerSettings } from "@/lib/core/types";
 import { daysUntil } from "@/lib/utils/time";
 
 export function derivePrimaryFocus(tasks: NormalizedTask[]) {
@@ -19,7 +19,12 @@ export function derivePrimaryFocus(tasks: NormalizedTask[]) {
   return "Admin cleanup";
 }
 
-export function deriveWarnings(tasks: NormalizedTask[], settings: PlannerSettings, now = new Date()) {
+function formatPaceCount(value: number) {
+  const rounded = Number(value.toFixed(2));
+  return Number.isInteger(rounded) ? `${rounded}` : `${rounded}`;
+}
+
+export function deriveWarnings(tasks: NormalizedTask[], settings: PlannerSettings, pace?: PlannerPace, now = new Date()) {
   const warnings: string[] = [];
   const sponsorRiskTask = tasks.find((task) => task.sponsorRisk);
   if (sponsorRiskTask) {
@@ -27,11 +32,17 @@ export function deriveWarnings(tasks: NormalizedTask[], settings: PlannerSetting
   }
 
   const urgentCreatedWorkshop = tasks.find((task) => {
-    const days = daysUntil(task.dueDate, now);
+    const days = daysUntil(task.dueDate, now, settings.timezone);
     return task.area === "CREATED_WORKSHOP" && days !== null && days <= settings.sponsorUrgencyDays;
   });
   if (urgentCreatedWorkshop) {
     warnings.push("Created Workshop item has a real deadline and moved up.");
+  }
+
+  if (pace?.status === "behind") {
+    warnings.push(`HTG minimum pace is behind before today. You need ${formatPaceCount(pace.neededTodayToStayOnPace)} article(s) today.`);
+  } else if (pace?.status === "due_today") {
+    warnings.push(`HTG minimum pace needs ${formatPaceCount(pace.neededTodayToStayOnPace)} article(s) today to stay on track.`);
   }
 
   return warnings;

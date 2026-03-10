@@ -2,7 +2,7 @@ import type { NormalizedArticleEntry, PlannerSettings } from "@/lib/core/types";
 import { isSameWeek } from "@/lib/utils/time";
 
 export function summarizeArticles(entries: NormalizedArticleEntry[], settings: PlannerSettings, now: Date) {
-  const thisWeek = entries.filter((entry) => isSameWeek(entry.submittedAt, now));
+  const thisWeek = entries.filter((entry) => isSameWeek(entry.submittedAt, now, settings.timezone));
   const articlesSubmittedThisWeek = thisWeek.length;
   const estimatedPaySoFar = thisWeek.reduce((sum, entry) => sum + (entry.pay ?? 0), 0);
 

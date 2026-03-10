@@ -87,7 +87,7 @@ export class TodoistAdapter implements IntegrationAdapter {
     );
 
     const tasks = tasksPayload.map((task) => {
-      const dueAt = task.due?.datetime ?? (task.due?.date ? `${task.due.date}T17:00:00.000Z` : undefined);
+      const dueAt = task.due?.datetime ?? task.due?.date;
       const area = pickArea(task.labels?.[0] ?? task.description);
 
       return {
@@ -100,7 +100,7 @@ export class TodoistAdapter implements IntegrationAdapter {
         notes: task.description,
         status: task.checked ? ("done" as const) : ("open" as const),
         dueDate: dueAt,
-        isOverdue: isOverdue(dueAt, context.now),
+        isOverdue: isOverdue(dueAt, context.now, context.timezone),
         isBlocked: Boolean(task.is_deleted),
         projectId: task.project_id,
         tags: task.labels,

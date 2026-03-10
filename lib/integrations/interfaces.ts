@@ -5,6 +5,7 @@ export interface SyncContext {
   config?: Record<string, unknown> | null;
   secret?: string | null;
   now: Date;
+  timezone?: string;
 }
 
 export interface IntegrationSyncResult {

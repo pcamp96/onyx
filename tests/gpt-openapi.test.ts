@@ -41,11 +41,17 @@ describe("canonical openapi schema", () => {
     expect(schema.paths["/api/founder/capture"].post["x-openai-isConsequential"]).toBe(true);
     expect(schema.components.schemas.TodayPlanResponse.additionalProperties).toBe(false);
     expect(schema.components.schemas.TodayPlanResponse.required).not.toContain("rankedTasks");
+    expect(schema.components.schemas.TodayPlanResponse.required).toContain("approvedHtgTasks");
+    expect(schema.components.schemas.TodayPlanResponse.required).toContain("pace");
     expect(schema.components.schemas.TodayPlanResponse.properties.priorityTasks.items.$ref).toBe("#/components/schemas/RankedTaskPreview");
+    expect(schema.components.schemas.TodayPlanResponse.properties.approvedHtgTasks.items.$ref).toBe("#/components/schemas/RankedTaskPreview");
     expect(schema.components.schemas.TodayPlanResponse.properties.tomorrowTasks.items.$ref).toBe("#/components/schemas/RankedTaskPreview");
     expect(schema.components.schemas.TodayPlanResponse.properties.otherTasksRemainingCount.type).toBe("integer");
     expect(schema.components.schemas.TodayPlanResponse.properties.tlwOperatorPlan.$ref).toBe("#/components/schemas/TlwOperatorPlan");
+    expect(schema.components.schemas.RankedTaskPreview.properties.dueLabel.type).toBe("string");
+    expect(schema.components.schemas.CalendarConstraint.properties.localTimeRangeLabel.type).toBe("string");
     expect(schema.components.schemas.WeekPlanResponse.properties.areaPriorities.required).toEqual(["HTG", "TLW", "CREATED_WORKSHOP"]);
+    expect(schema.components.schemas.WeekPlanResponse.required).toContain("otherPriorities");
     expect(schema.components.schemas.WeekPlanResponse.properties.rankedPrioritiesRemainingCount.type).toBe("integer");
     expect(schema.components.schemas.IdeasPlanResponse.properties.rankedContextRemainingCount.type).toBe("integer");
     expect(schema.components.schemas.RankedTask.properties.sourceUrl.format).toBe("uri");

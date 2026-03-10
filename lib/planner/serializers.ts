@@ -1,4 +1,5 @@
 import type {
+  CalendarConstraintPreview,
   WorkArea,
   PlannerIdeasApiResult,
   PlannerIdeasResult,
@@ -9,8 +10,9 @@ import type {
   RankedTask,
   RankedTaskPreview,
 } from "@/lib/core/types";
+import { formatDueLabel, formatLocalDateLabel, formatLocalTimeRangeLabel, isDateOnlyValue } from "@/lib/utils/time";
 
-function toRankedTaskPreview(task: RankedTask): RankedTaskPreview {
+function toRankedTaskPreview(task: RankedTask, timezone: string): RankedTaskPreview {
   return {
     id: task.id,
     source: task.source,
@@ -20,10 +22,23 @@ function toRankedTaskPreview(task: RankedTask): RankedTaskPreview {
     title: task.title,
     status: task.status,
     dueDate: task.dueDate,
+    dueLabel: formatDueLabel(task.dueDate, timezone),
+    isDateOnlyDue: isDateOnlyValue(task.dueDate),
     isOverdue: task.isOverdue,
     isBlocked: task.isBlocked,
     rank: task.rank,
     reason: task.reason,
+  };
+}
+
+function toCalendarConstraintPreview(
+  event: PlannerTodayResult["calendarConstraints"][number],
+  timezone: string,
+): CalendarConstraintPreview {
+  return {
+    ...event,
+    localDateLabel: formatLocalDateLabel(event.start, timezone),
+    localTimeRangeLabel: formatLocalTimeRangeLabel(event.start, event.end, timezone, event.allDay),
   };
 }
 
@@ -51,12 +66,16 @@ export function toTodayApiResult(result: PlannerTodayResult): PlannerTodayApiRes
 
   return {
     date: result.date,
+    timezone: result.timezone,
     summary: result.summary,
-    calendarConstraints: result.calendarConstraints,
+    pace: result.pace,
+    calendarConstraints: result.calendarConstraints.map((event) => toCalendarConstraintPreview(event, result.timezone)),
     primaryFocus: result.primaryFocus,
-    priorityTasks: result.priorityTasks.map(toRankedTaskPreview),
-    otherTasks: overflow.visible.map(toRankedTaskPreview),
-    tomorrowTasks: result.tomorrowTasks.map(toRankedTaskPreview),
+    approvedHtgTasks: result.approvedHtgTasks.map((task) => toRankedTaskPreview(task, result.timezone)),
+    approvedHtgRemainingCount: result.approvedHtgRemainingCount,
+    priorityTasks: result.priorityTasks.map((task) => toRankedTaskPreview(task, result.timezone)),
+    otherTasks: overflow.visible.map((task) => toRankedTaskPreview(task, result.timezone)),
+    tomorrowTasks: result.tomorrowTasks.map((task) => toRankedTaskPreview(task, result.timezone)),
     otherTasksRemainingCount: overflow.remainingCount,
     otherTasksRemainingByArea: overflow.remainingByArea,
     warnings: result.warnings,
@@ -72,13 +91,17 @@ export function toWeekApiResult(result: PlannerWeekResult): PlannerWeekApiResult
   return {
     weekStart: result.weekStart,
     weekEnd: result.weekEnd,
+    timezone: result.timezone,
     summary: result.summary,
+    pace: result.pace,
     primaryFocus: result.primaryFocus,
-    rankedPriorities: overflow.visible.map(toRankedTaskPreview),
+    approvedHtgTasks: result.approvedHtgTasks.map((task) => toRankedTaskPreview(task, result.timezone)),
+    otherPriorities: result.otherPriorities.map((task) => toRankedTaskPreview(task, result.timezone)),
+    rankedPriorities: overflow.visible.map((task) => toRankedTaskPreview(task, result.timezone)),
     areaPriorities: {
-      HTG: result.areaPriorities.HTG.map(toRankedTaskPreview),
-      TLW: result.areaPriorities.TLW.map(toRankedTaskPreview),
-      CREATED_WORKSHOP: result.areaPriorities.CREATED_WORKSHOP.map(toRankedTaskPreview),
+      HTG: result.areaPriorities.HTG.map((task) => toRankedTaskPreview(task, result.timezone)),
+      TLW: result.areaPriorities.TLW.map((task) => toRankedTaskPreview(task, result.timezone)),
+      CREATED_WORKSHOP: result.areaPriorities.CREATED_WORKSHOP.map((task) => toRankedTaskPreview(task, result.timezone)),
     },
     rankedPrioritiesRemainingCount: overflow.remainingCount,
     rankedPrioritiesRemainingByArea: overflow.remainingByArea,
@@ -97,7 +120,7 @@ export function toIdeasApiResult(result: PlannerIdeasResult): PlannerIdeasApiRes
     primaryFocus: result.primaryFocus,
     contentPrompts: result.contentPrompts,
     warnings: result.warnings,
-    rankedContext: overflow.visible.map(toRankedTaskPreview),
+    rankedContext: overflow.visible.map((task) => toRankedTaskPreview(task, "UTC")),
     rankedContextRemainingCount: overflow.remainingCount,
     rankedContextRemainingByArea: overflow.remainingByArea,
     generatedAt: result.generatedAt,

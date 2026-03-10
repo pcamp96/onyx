@@ -10,8 +10,8 @@ export function buildGptInstructions(input: GptInstructionTemplateInput) {
   const introLine = `You are ${preferences.assistantName}, ${preferences.userDisplayName}'s ${preferences.roleDescription}.`;
   const limitsLine =
     preferences.maxMarketingActions > 0
-      ? `Constraints: Show at most ${preferences.maxTasks} items in the Top Priorities section. Still list all returned due or overdue otherTasks in a separate Remaining Work section. Max ${preferences.maxMarketingActions} marketing or content action.`
-      : `Constraints: Show at most ${preferences.maxTasks} items in the Top Priorities section. Still list all returned due or overdue otherTasks in a separate Remaining Work section.`;
+      ? `Constraints: Show at most ${preferences.maxTasks} items in the Other Work section. Keep approvedHtgTasks separate from otherTasks. Max ${preferences.maxMarketingActions} marketing or content action.`
+      : `Constraints: Show at most ${preferences.maxTasks} items in the Other Work section. Keep approvedHtgTasks separate from otherTasks.`;
   const appendix = preferences.customInstructionsAppendix?.trim();
 
   return [
@@ -24,9 +24,9 @@ export function buildGptInstructions(input: GptInstructionTemplateInput) {
     section("Tool Rules", [
       ...preferences.toolRules,
       "Use the Onyx API instead of guessing priorities.",
-      `Call GET ${input.baseUrl}/api/founder/today when the user asks what to do today, what should happen first, or what deserves immediate execution attention. Use priorityTasks for the main day plan, otherTasks for the remaining due or overdue load, tomorrowTasks for clearly labeled tomorrow work, and tlwOperatorPlan when TLW metrics are connected.`,
+      `Call GET ${input.baseUrl}/api/founder/today when the user asks what to do today, what should happen first, or what deserves immediate execution attention. Use approvedHtgTasks for the dedicated HTG approved-article lane, otherTasks for the separate non-HTG work lane, tomorrowTasks for clearly labeled tomorrow work, pace for minimum-output status, and tlwOperatorPlan when TLW metrics are connected.`,
       `Call GET ${input.baseUrl}/api/founder/ideas when the user explicitly wants content ideas, posting ideas, or build-in-public prompts tied to current work.`,
-      `Call GET ${input.baseUrl}/api/founder/week when the user asks about weekly pace, weekly priorities, deadline risk, or whether they are behind this week. Use areaPriorities to present separate HTG, TLW, and Created Workshop weekly sections when they are present.`,
+      `Call GET ${input.baseUrl}/api/founder/week when the user asks about weekly pace, weekly priorities, deadline risk, or whether they are behind this week. Use approvedHtgTasks for HTG approved articles due this week and otherPriorities for the remaining weekly work.`,
       `Call GET ${input.baseUrl}/api/founder/tlw/overview when the user asks for The Laser Workshop metrics, growth interpretation, marketing direction, or a merged product plus traffic read.`,
       `Call GET ${input.baseUrl}/api/founder/tlw/analytics when the user asks specifically about TLW traffic sources, top channel, or activation trends.`,
       `Call GET ${input.baseUrl}/api/founder/tlw/snapshot when the user explicitly wants the raw TLW product snapshot without the analytics layer.`,
@@ -37,22 +37,26 @@ export function buildGptInstructions(input: GptInstructionTemplateInput) {
     section("Constraints", [
       ...preferences.constraints,
       "Preserve ranked order from the API exactly. Never re-rank, reshuffle, or average together returned tasks.",
-      "For /today, lead with the first items from priorityTasks up to the configured Top Priorities limit, then surface every returned otherTasks item as the rest of today's due or overdue work.",
+      "For /today, always keep approvedHtgTasks in a dedicated HTG Approved Articles section and do not merge them into otherTasks.",
+      "For /today, use otherTasks as the separate non-HTG workload lane.",
       "If /today returns tomorrowTasks, present them in a clearly labeled tomorrow section and do not mix them into today's execution list.",
+      "Use pace as the source of truth for minimum-output status. Do not infer pace from remainingToMinimum alone.",
       "If /today returns otherTasksRemainingCount above zero, explicitly say there is additional lower-priority work beyond the returned otherTasks list and use otherTasksRemainingByArea to summarize it.",
       "If /week returns rankedPrioritiesRemainingCount above zero, say there is additional weekly work beyond the returned rankedPriorities list and use rankedPrioritiesRemainingByArea to summarize it.",
-      "For /week, use areaPriorities to show separate HTG, TLW, and Created Workshop priorities instead of letting HTG consume the entire weekly output when other business areas are present.",
+      "For /week, use approvedHtgTasks for HTG approved articles this week and otherPriorities for the rest of the weekly work. Use areaPriorities only as supporting structure when helpful.",
       "If /ideas returns rankedContextRemainingCount above zero, say there is additional ranked context beyond the returned rankedContext list and use rankedContextRemainingByArea to summarize it.",
       "If /today returns tlwOperatorPlan, use it to surface TLW focus, metrics, top tasks, and one marketing action.",
       "Treat calendar constraints as limits on execution capacity, not as the planner itself.",
+      "Read meeting times from calendarConstraints.localTimeRangeLabel and dates from localDateLabel instead of inferring from raw UTC timestamps.",
       "Highlight warnings, deadline risks, and pace gaps clearly whenever they are present.",
     ]),
     section("Output Format", [
-      "For /today, use this order when relevant: Next Action, Top Priorities, Remaining Due or Overdue Work, Tomorrow, Calendar Constraints, TLW Operator Plan, Warnings.",
-      "Top Priorities should contain only the main priorityTasks items.",
-      "Remaining Due or Overdue Work should list all returned otherTasks items in order. Do not omit them just because Top Priorities is full.",
+      "For /today, use this order when relevant: Next Action, HTG Approved Articles, Other Work, Tomorrow, Calendar Constraints, TLW Operator Plan, Pace / Warnings.",
+      "HTG Approved Articles should contain approvedHtgTasks in returned order, with dueLabel shown when useful.",
+      "Other Work should use otherTasks in returned order. Do not merge approvedHtgTasks into this section.",
       "If there is no otherTasks work, say so briefly instead of inventing extra tasks.",
       "If tomorrowTasks are present, label them as tomorrow work, not today's workload.",
+      "For /week, use this order when relevant: HTG Approved Articles This Week, Other Weekly Priorities, Pace / Risks.",
     ]),
     `Project labels: ${preferences.projectLabels.htg}, ${preferences.projectLabels.tlw}, ${preferences.projectLabels.createdWorkshop}.`,
     limitsLine,
