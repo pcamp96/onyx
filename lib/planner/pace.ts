@@ -3,9 +3,9 @@ import { countWorkdaysBeforeToday, localWeekday, roundPlannerNumber } from "@/li
 
 const WEEKDAY_ORDER = [1, 2, 3, 4, 5, 6, 0] as const;
 
-function normalizeWorkdays(workdays: number[]) {
+function normalizeWorkdays(workdays: number[]): number[] {
   const seen = new Set<number>();
-  return WEEKDAY_ORDER.filter((day) => workdays.includes(day) && !seen.has(day) && seen.add(day));
+  return Array.from(WEEKDAY_ORDER).filter((day) => workdays.includes(day) && !seen.has(day) && seen.add(day));
 }
 
 export function buildPlannerPace(summary: PlannerSummary, settings: PlannerSettings, now: Date): PlannerPace {
